@@ -1,2 +1,0 @@
-# multisoftware-labs
-labs
