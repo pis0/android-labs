@@ -1,173 +1,265 @@
 package com.multisofware.mob.services;
 
-import android.annotation.SuppressLint;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.DisplayMetrics;
+import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
-import org.json.JSONObject;
+import androidx.annotation.NonNull;
 
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Scanner;
-import java.util.concurrent.ExecutionException;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
-import static android.os.AsyncTask.SERIAL_EXECUTOR;
+import java.util.Date;
+
+import static com.google.android.gms.location.LocationServices.getFusedLocationProviderClient;
 
 public class BackgroundLocationService extends Service {
 
+    private static String TAG = "BackgroundLocationService";
+
+    private LocationManager mLocationManager = null;
+    private static final int LOCATION_INTERVAL = 5000;
+    private static final float LOCATION_DISTANCE = 10f;
+    private static final long LOCATION_CHANGED_CALL_MAX_THRESHOLD_TIME = 2000;
+
+    private class LocationListener implements android.location.LocationListener {
+        Location mLastLocation;
+
+        LocationListener(String provider) {
+            Log.d(TAG, "LocationListener " + provider);
+            mLastLocation = new Location(provider);
+        }
+
+        @Override
+        public void onLocationChanged(Location location) {
+            //Log.d(TAG, "onLocationChanged: " + location);
+            mLastLocation.set(location);
+        }
+
+        @Override
+        public void onProviderDisabled(String provider) {
+            Log.d(TAG, "onProviderDisabled: " + provider);
+        }
+
+        @Override
+        public void onProviderEnabled(String provider) {
+            Log.d(TAG, "onProviderEnabled: " + provider);
+        }
+
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+            Log.d(TAG, "onStatusChanged: " + provider);
+        }
+    }
+
+
+    LocationListener[] mLocationListeners = new LocationListener[]{
+            new LocationListener(LocationManager.GPS_PROVIDER),
+            new LocationListener(LocationManager.NETWORK_PROVIDER)
+    };
+
+    @Override
+    public IBinder onBind(Intent arg0) {
+        return null;
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "onStartCommand");
+        super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
+    }
 
     public Context context = this;
     public Handler handler = null;
     public static Runnable runnable = null;
 
-    private static String TAG = "BackgroundLocationService";
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
-    private String fResultt;
-
     @Override
     public void onCreate() {
 
-        Toast.makeText(this, "Service created!", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "onCreate");
+
+        initializeLocationManager();
+        startLocationUpdates();
 
         handler = new Handler();
         runnable = new Runnable() {
             public void run() {
-
-
-
-                //url
-                //http://tms.multicte.com.br/sgt.mobile/ControleEntrega.svc/AtualizarDadosPosicionamento
-                /*
-                {
-                    "token": "token",
-                    "usuario": 25072,
-                    "empresaMultisoftware": 18,
-                    "latitude": "-27,0994205",
-                    "longitude": "-52,6339212",
-                    "data": "11012020105840"
-                }
-                */
-
-
-
-                //http
-                @SuppressLint("StaticFieldLeak")
-                final AsyncTask<Void, Void, Boolean> httpTask = new AsyncTask<Void, Void, Boolean>() {
-
-                    @Override
-                    protected Boolean doInBackground(Void... params) {
-
-                        HashMap regularValues;
-                        String defaultResult = null;
-                        URL url;
-                        HttpURLConnection conn = null;
-                        try {
-
-                            url = new URL("http://tms.multicte.com.br/sgt.mobile/ControleEntrega.svc/AtualizarDadosPosicionamento");
-                            conn = (HttpURLConnection) url.openConnection();
-                            conn.setRequestMethod("POST");
-                            conn.setRequestProperty("Content-Type", "application/json");
-                            conn.setRequestProperty("Accept", "application/json");
-                            conn.setDoOutput(true);
-                            conn.setDoInput(true);
-
-                            JSONObject jo = new JSONObject();
-                            jo.put("token", "token");
-                            jo.put("usuario", 25072);
-                            jo.put("empresaMultisoftware", 18);
-                            jo.put("data", "11012020105840");
-                            jo.put("latitude", "-27,0994205");
-                            jo.put("longitude", "-52,6339212");
-
-                            Log.d(TAG, "resolveHid.json: " + jo.toString());
-
-                            DataOutputStream os = new DataOutputStream(conn.getOutputStream());
-                            os.writeBytes(jo.toString());
-                            os.flush();
-                            os.close();
-
-                            final String status = String.valueOf(conn.getResponseCode());
-                            final String msg = String.valueOf(conn.getResponseCode());
-
-                            Log.d(TAG, "resolveHid.status: " + status);
-                            Log.d(TAG, "resolveHid.msg: " + msg);
-
-                            InputStream inputStream = conn.getInputStream();
-                            conn.disconnect();
-
-                            Scanner scan = new Scanner(inputStream, "UTF-8");
-                            StringBuilder fResult = new StringBuilder();
-                            while (scan.hasNext()) fResult.append(scan.next());
-
-                            JSONObject jResult = new JSONObject(fResult.toString());
-                            fResultt = jResult.toString();
-
-                            Log.d(TAG, "resolveHid.result: " + fResultt);
-                            //Toast.makeText(context, "resolveHid.result: " + fResultt, Toast.LENGTH_LONG).show();
-
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            return false;
-
-                        } finally {
-                            if (conn != null) conn.disconnect();
-                            handler.postDelayed(runnable, 10000);
-                        }
-
-                        return true;
-                    }
-                };
-
-                try {
-                    if(httpTask.executeOnExecutor(SERIAL_EXECUTOR).get())
-                    {
-                        Toast.makeText(context, "resolveHid.result: " + fResultt, Toast.LENGTH_LONG).show();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-//                Toast.makeText(context, "Service is still running", Toast.LENGTH_LONG).show();
-//                handler.postDelayed(runnable, 10000);
+                requestLocationUpdates();
+                handler.postDelayed(runnable, LOCATION_INTERVAL);
             }
         };
 
-        handler.postDelayed(runnable, 15000);
+        handler.postDelayed(runnable, LOCATION_INTERVAL);
+
     }
+
+    private void requestLocationUpdates() {
+
+        //Log.d(TAG, "requestLocationUpdates");
+
+        try {
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
+                    mLocationListeners[1]);
+        } catch (java.lang.SecurityException ex) {
+            Log.i(TAG, "fail to request location update, ignore", ex);
+        } catch (Exception e) {
+            Log.d(TAG, "requestLocationUpdates error:" + e.getMessage());
+        }
+
+
+        try {
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER, LOCATION_INTERVAL, LOCATION_DISTANCE,
+                    mLocationListeners[0]);
+        } catch (java.lang.SecurityException ex) {
+            Log.i(TAG, "fail to request location update, ignore", ex);
+        } catch (Exception e) {
+            Log.d(TAG, "requestLocationUpdates error:" + e.getMessage());
+        }
+
+
+        try {
+            getFusedLocationProviderClient(context).requestLocationUpdates(
+                    locationRequest,
+                    new LocationCallback() {
+                        @Override
+                        public void onLocationResult(LocationResult locationResult) {
+                            onLocationChanged(locationResult.getLastLocation());
+                        }
+                    },
+                    Looper.myLooper());
+        } catch (Exception e) {
+            Log.d(TAG, "requestLocationUpdates error:" + e.getMessage());
+        }
+
+
+        getLastLocation();
+
+    }
+
+    private void initializeLocationManager() {
+        Log.d(TAG, "initializeLocationManager");
+        if (mLocationManager == null) {
+            mLocationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
+        }
+    }
+
+
+    private LocationRequest locationRequest;
+
+    protected void startLocationUpdates() {
+
+        Log.d(TAG, "startLocationUpdates");
+
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(LOCATION_INTERVAL);
+        locationRequest.setFastestInterval(LOCATION_INTERVAL);
+        locationRequest.setMaxWaitTime(LOCATION_INTERVAL);
+
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.setAlwaysShow(true);
+        builder.addLocationRequest(locationRequest);
+
+        LocationSettingsRequest locationSettingsRequest = builder.build();
+
+        SettingsClient settingsClient = LocationServices.getSettingsClient(this);
+        settingsClient.checkLocationSettings(locationSettingsRequest);
+
+    }
+
+    public void getLastLocation() {
+
+        getFusedLocationProviderClient(this).getLastLocation()
+                .addOnSuccessListener(new OnSuccessListener<Location>() {
+                    @Override
+                    public void onSuccess(Location location) {
+                        if (location != null) onLocationChanged(location);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d(TAG, "Error trying to get last GPS location");
+                        e.printStackTrace();
+                    }
+                });
+
+
+        Location location;
+        if (mLocationManager != null) {
+
+            try {
+                location = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (location != null) onLocationChanged(location);
+            } catch (java.lang.SecurityException ex) {
+                Log.i(TAG, "fail to request location update, ignore", ex);
+            }
+
+            try {
+                location = mLocationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (location != null) onLocationChanged(location);
+            } catch (java.lang.SecurityException ex) {
+                Log.i(TAG, "fail to request location update, ignore", ex);
+            }
+        }
+
+    }
+
+    private double latitude;
+    private double longitude;
+    private long onLocationChangedCallThresholdTime;
+
+    public void onLocationChanged(Location location) {
+
+        Log.d(TAG, "calling onLocationChanged...");
+
+        if (location.getLatitude() != latitude || location.getLongitude() != longitude) {
+
+            latitude = location.getLatitude();
+            longitude = location.getLongitude();
+
+            long currentThresholdTime = new Date().getTime();
+            if (Math.abs(currentThresholdTime - onLocationChangedCallThresholdTime) >= LOCATION_CHANGED_CALL_MAX_THRESHOLD_TIME)
+                onLocationChangedCallThresholdTime = currentThresholdTime;
+            else return;
+
+            //Log.e(TAG,  latitude + "," + longitude, new Error());
+            Log.w(TAG,  latitude + "," + longitude, new Error());
+        }
+    }
+
 
     @Override
     public void onDestroy() {
-        /* IF YOU WANT THIS SERVICE KILLED WITH THE APP THEN UNCOMMENT THE FOLLOWING LINE */
-        //handler.removeCallbacks(runnable);
-        Toast.makeText(this, "Service stopped", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "onDestroy");
+
+//        super.onDestroy();
+//        if (mLocationManager != null) {
+//            for (int i = 0; i < mLocationListeners.length; i++) {
+//                try {
+//                    mLocationManager.removeUpdates(mLocationListeners[i]);
+//                } catch (Exception ex) {
+//                    Log.i(TAG, "fail to remove location listners, ignore", ex);
+//                }
+//            }
+//        }
     }
 
-//    @Override
-//    public void onStart(Intent intent, int startid) {
-//        Toast.makeText(this, "Service started by user.", Toast.LENGTH_LONG).show();
-//    }
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-
-        Toast.makeText(this, "Service started by user.", Toast.LENGTH_LONG).show();
-        return super.onStartCommand(intent, flags, startId);
-
-    }
 }
