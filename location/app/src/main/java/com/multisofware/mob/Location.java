@@ -1,124 +1,263 @@
+
 package com.multisofware.mob;
 
 import android.Manifest;
-import android.content.DialogInterface;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.multisofware.mob.services.BackgroundLocationService;
+import com.multisofware.mob.services.LocationUpdatesService;
+import com.multisofware.mob.utils.Utils;
 
-public class Location extends AppCompatActivity {
 
-    private static String TAG = "Location";
+public class Location extends AppCompatActivity implements
+        SharedPreferences.OnSharedPreferenceChangeListener {
+    private static final String TAG = Location.class.getSimpleName();
 
+    // Used in checking for runtime permissions.
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+
+    // The BroadcastReceiver used to listen from broadcasts from the service.
+    private MyReceiver myReceiver;
+
+    // A reference to the service used to get location updates.
+    private LocationUpdatesService mService = null;
+
+    // Tracks the bound state of the service.
+    private boolean mBound = false;
+
+    // UI elements.
+//    private Button mRequestLocationUpdatesButton;
+//    private Button mRemoveLocationUpdatesButton;
+
+    // Monitors the state of the connection to the service.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
 
-        checkPermissions();
-
-    }
-
-    private static final int BACKGROUND_LOCATION_REQUEST_CODE = 1 << 0;
-    private static final int FULL_LOCATION_REQUEST_CODE = 1 << 1;
-
-    private void checkPermissions() {
-        boolean permissionAccessCoarseLocationApproved = ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED;
-
-        if (permissionAccessCoarseLocationApproved) {
-
-            boolean backgroundLocationPermissionApproved = ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED;
-
-            if (backgroundLocationPermissionApproved) {
-
-                Log.d(TAG, "start the service!");
-                startService(new Intent(this, BackgroundLocationService.class));
-
-            } else {
-
-                Log.d(TAG, "only foreground location access");
-
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{
-                                Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                        },
-                        BACKGROUND_LOCATION_REQUEST_CODE
-                );
+        // Check that the user hasn't revoked permissions by going to Settings.
+        if (Utils.requestingLocationUpdates(this)) {
+            if (!checkPermissions()) {
+                requestPermissions();
             }
-        } else {
-
-            Log.d(TAG, "no location access");
-
-            ActivityCompat.requestPermissions(
-                    this,
-                    new String[]{
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                    },
-                    FULL_LOCATION_REQUEST_CODE
-            );
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    protected void onStart() {
+        super.onStart();
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
 
-        Log.d(TAG, "requestCode:" + requestCode + ", permissions:" + permissions + ", grantResults:" + grantResults);
+//        mRequestLocationUpdatesButton = (Button) findViewById(R.id.request_location_updates_button);
+//        mRemoveLocationUpdatesButton = (Button) findViewById(R.id.remove_location_updates_button);
 
-        switch (requestCode) {
-            case FULL_LOCATION_REQUEST_CODE:
-            case BACKGROUND_LOCATION_REQUEST_CODE: {
+//        mRequestLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                if (!checkPermissions()) {
+//                    requestPermissions();
+//                } else {
+//                    mService.requestLocationUpdates();
+//                }
+//            }
+//        });
 
-                for (int results : grantResults)
-                    if (results != PackageManager.PERMISSION_GRANTED) {
-                        Log.d(TAG, "has no permissions enough to start the service");
-                        requestPermissionsAgain();
-                        return;
-                    }
+//        mRemoveLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                mService.removeLocationUpdates();
+//            }
+//        });
 
-                Log.d(TAG, "start the service!");
-                startService(new Intent(this, BackgroundLocationService.class));
+        // Restore the state of the buttons when the activity (re)launches.
+//        setButtonsState(Utils.requestingLocationUpdates(this));
+
+        // Bind to the service. If the service is in foreground mode, this signals to the service
+        // that since this activity is in the foreground, the service can exit foreground mode.
+        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
+                Context.BIND_AUTO_CREATE);
+
+
+
+        //TODO to fix
+        requestPermissions();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
+                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+    }
+
+    @Override
+    protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mBound) {
+            // Unbind from the service. This signals to the service that this activity is no longer
+            // in the foreground, and the service can respond by promoting itself to a foreground
+            // service.
+            unbindService(mServiceConnection);
+            mBound = false;
+        }
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+        super.onStop();
+    }
+
+    /**
+     * Returns the current state of the permissions needed.
+     */
+    private boolean checkPermissions() {
+        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+
+    private void requestPermissions() {
+        boolean shouldProvideRationale =
+                ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION);
+
+        // Provide an additional rationale to the user. This would happen if the user denied the
+        // request previously, but didn't check the "Don't ask again" checkbox.
+        if (shouldProvideRationale) {
+            Log.i(TAG, "Displaying permission rationale to provide additional context.");
+//            Snackbar.make(
+//                    findViewById(R.id.activity_main),
+//                    R.string.permission_rationale,
+//                    Snackbar.LENGTH_INDEFINITE)
+//                    .setAction(R.string.ok, new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View view) {
+//                            // Request permission
+//                            ActivityCompat.requestPermissions(Location.this,
+//                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+//                                    REQUEST_PERMISSIONS_REQUEST_CODE);
+//                        }
+//                    })
+//                    .show();
+        } else {
+            Log.i(TAG, "Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(Location.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+
+    /**
+     * Callback received when a permissions request has been completed.
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        Log.i(TAG, "onRequestPermissionResult");
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+                Log.i(TAG, "User interaction was cancelled.");
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission was granted.
+                mService.requestLocationUpdates();
+            } else {
+                // Permission denied.
+//                setButtonsState(false);
+//                Snackbar.make(
+//                        findViewById(R.id.activity_main),
+//                        R.string.permission_denied_explanation,
+//                        Snackbar.LENGTH_INDEFINITE)
+//                        .setAction(R.string.settings, new View.OnClickListener() {
+//                            @Override
+//                            public void onClick(View view) {
+//                                // Build intent that displays the App settings screen.
+//                                Intent intent = new Intent();
+//                                intent.setAction(
+//                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+//                                Uri uri = Uri.fromParts("package",
+//                                        BuildConfig.APPLICATION_ID, null);
+//                                intent.setData(uri);
+//                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                                startActivity(intent);
+//                            }
+//                        })
+//                        .show();
             }
         }
-
-
     }
 
-    private AlertDialog alert = null;
-    private void requestPermissionsAgain() {
-
-        if(alert == null)
-            alert = new AlertDialog.Builder(this)
-                    .setMessage(
-                            "Tem q permitir saporra senão nao vai rodar essa caceta! Se em algum momento vc deu um \"negar e nao perguntar novamente\", vc se fudeu.." //R.string.dialog_message
-                    )
-                    .setTitle(
-                            "Ow, carai! :\\" //R.string.dialog_title
-                    )
-                    .setPositiveButton(
-                            "Tentar Novamente", //R.string.ok,
-                            new DialogInterface.OnClickListener() {
-                                public void onClick(DialogInterface dialog, int id) {
-                                    checkPermissions();
-                                }
-                            }).create();
-        alert.show();
-
+    /**
+     * Receiver for broadcasts sent by {@link LocationUpdatesService}.
+     */
+    private class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            android.location.Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
+            if (location != null) {
+                Toast.makeText(Location.this, Utils.getLocationText(location),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        // Update the buttons state depending on whether location updates are being requested.
+//        if (s.equals(Utils.KEY_REQUESTING_LOCATION_UPDATES)) {
+//            setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES,
+//                    false));
+//        }
+    }
+
+//    private void setButtonsState(boolean requestingLocationUpdates) {
+//        if (requestingLocationUpdates) {
+//            mRequestLocationUpdatesButton.setEnabled(false);
+//            mRemoveLocationUpdatesButton.setEnabled(true);
+//        } else {
+//            mRequestLocationUpdatesButton.setEnabled(true);
+//            mRemoveLocationUpdatesButton.setEnabled(false);
+//        }
+//    }
 }
