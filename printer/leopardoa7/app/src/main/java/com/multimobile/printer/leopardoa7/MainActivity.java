@@ -99,7 +99,94 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 try {
-                    printText(txt.getText().toString());
+
+                    //TODO to review
+                    //printText(txt.getText().toString());
+
+
+                    //format[2] = ((byte)(0x8  | formatHelper[2]));  // Bold
+                    //format[2] = ((byte)(0x10 | formatHelper[2]));  // Height
+                    //format[2] = ((byte)(0x20 | formatHelper[2]));  // Width
+                    //format[2] = ((byte)(0x80 | formatHelper[2]));  // Underline
+                    //format[2] = ((byte)(0x2  | formatHelper[2]));  // Small
+                    //format[2] = ((byte)(0x1  | formatHelper[2]));  // Smallest
+
+                    outputStream.write(PrinterCommands.ESC_ALIGN_CENTER);
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
+
+                    byte[] format = { 27, 33, 0 };
+                    byte[] formatHelper = { 27, 33, 0 };
+
+                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("Cooperativa Central Aurora Alimentos").getBytes());
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("Comprovante de Coleta de Leite").getBytes());
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x2 | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("Produtor:").getBytes());
+                    outputStream.write(PrinterCommands.FEED_LINE);
+//                    format[2] = formatHelper[2];
+                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("341517 - ADILSON NISTERVITZ").getBytes());
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x2 | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("Placa:  ").getBytes());
+//                    format[2] = formatHelper[2];
+                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("MEH1605").getBytes());
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+
+                    format[2] = ((byte)(0x8  | formatHelper[2]));  // Bold
+                    format[2] = ((byte)(0x20 | formatHelper[2]));  // Width
+                    outputStream.write(format);
+                    outputStream.write(("COLETA REJEITADA").getBytes());
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("LEITE COM + DE 48 HORAS").getBytes());
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("05/02/2020").getBytes());
+                    outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    outputStream.write(format);
+                    outputStream.write(("www.auroraalimentos.com.br").getBytes());
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+                    outputStream.write(PrinterCommands.FEED_LINE);
+
+
+
+
+
+
+
+
+
                 } catch (Exception e) {
                     Log.e(TAG, "btnPrintText error: " + e.getMessage(), e);
                 }
@@ -169,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             beginListenData();
+
 
         } catch (Exception e) {
             Log.e(TAG, "openBluetoothPrinter error: " + e.getMessage(), e);
