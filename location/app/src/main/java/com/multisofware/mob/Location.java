@@ -2,6 +2,7 @@
 package com.multisofware.mob;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -10,9 +11,13 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
@@ -31,7 +36,7 @@ public class Location extends AppCompatActivity implements
     private static final String TAG = Location.class.getSimpleName();
 
     // Used in checking for runtime permissions.
-    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+    public static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
 
     // The BroadcastReceiver used to listen from broadcasts from the service.
     private MyReceiver myReceiver;
@@ -42,12 +47,16 @@ public class Location extends AppCompatActivity implements
     // Tracks the bound state of the service.
     private boolean mBound = false;
 
+
+    static public Context mContext;
+
     // UI elements.
 //    private Button mRequestLocationUpdatesButton;
 //    private Button mRemoveLocationUpdatesButton;
 
     // Monitors the state of the connection to the service.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -69,13 +78,23 @@ public class Location extends AppCompatActivity implements
         myReceiver = new MyReceiver();
         setContentView(R.layout.activity_main);
 
+        mContext = this;
+
         // Check that the user hasn't revoked permissions by going to Settings.
         if (Utils.requestingLocationUpdates(this)) {
             if (!checkPermissions()) {
                 requestPermissions();
             }
         }
+
+
+
+
     }
+
+
+
+
 
     @Override
     protected void onStart() {
@@ -148,14 +167,14 @@ public class Location extends AppCompatActivity implements
     /**
      * Returns the current state of the permissions needed.
      */
-    private boolean checkPermissions() {
-        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+    static public boolean checkPermissions() {
+        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(mContext,
                 Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
-    private void requestPermissions() {
+    static public void requestPermissions() {
         boolean shouldProvideRationale =
-                ActivityCompat.shouldShowRequestPermissionRationale(this,
+                ActivityCompat.shouldShowRequestPermissionRationale((Activity) mContext,
                         Manifest.permission.ACCESS_FINE_LOCATION);
 
         // Provide an additional rationale to the user. This would happen if the user denied the
@@ -181,7 +200,7 @@ public class Location extends AppCompatActivity implements
             // Request permission. It's possible this can be auto answered if device policy
             // sets the permission in a given state or the user denied the permission
             // previously and checked "Never ask again".
-            ActivityCompat.requestPermissions(Location.this,
+            ActivityCompat.requestPermissions((Activity) mContext,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
                     REQUEST_PERMISSIONS_REQUEST_CODE);
         }
@@ -244,6 +263,9 @@ public class Location extends AppCompatActivity implements
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+
+        Log.d(TAG, "onSharedPreferenceChanged: " + s);
+
         // Update the buttons state depending on whether location updates are being requested.
 //        if (s.equals(Utils.KEY_REQUESTING_LOCATION_UPDATES)) {
 //            setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES,

@@ -1,6 +1,8 @@
 
 package com.multisofware.mob.services;
 
+import android.Manifest;
+import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -10,16 +12,20 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.ContentObserver;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -135,7 +141,66 @@ public class LocationUpdatesService extends Service {
             // Set the Notification Channel for the Notification Manager.
             mNotificationManager.createNotificationChannel(mChannel);
         }
+
+        //TODO to review
+        this.getApplicationContext()
+                .getContentResolver()
+                .registerContentObserver(
+                        Settings.System.getUriFor(Settings.System.LOCATION_PROVIDERS_ALLOWED),
+                        true,
+                        new LocationContentObserver(null));
+
+
+
+
     }
+
+    //TODO to review
+    private class LocationContentObserver extends ContentObserver {
+        LocationContentObserver(Handler h) {
+            super(h);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            Log.i(TAG, "onChange(" + selfChange + ")");
+
+            LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+            boolean gps_enabled = false;
+            boolean network_enabled = false;
+
+            try {
+                gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            } catch(Exception ex) {}
+
+            try {
+                network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            } catch(Exception ex) {}
+
+            Log.i(TAG, "gps_enabled: " + gps_enabled + ", network_enabled: " + network_enabled);
+
+
+            Intent intent;
+            if(!gps_enabled && !network_enabled) {
+                //intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                //intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK |Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                intent = new Intent(com.multisofware.mob.Location.mContext, com.multisofware.mob.Location.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK |Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT );
+                startActivity(intent);
+
+                Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+                sendBroadcast(closeDialog);
+
+            }
+
+            super.onChange(selfChange);
+
+
+
+        }
+    }
+
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -208,8 +273,14 @@ public class LocationUpdatesService extends Service {
     }
 
     @Override
-    public void onDestroy() {
+    public void onDestroy()
+    {
         mServiceHandler.removeCallbacksAndMessages(null);
+
+        //TODO to review
+        this.getApplicationContext()
+                .getContentResolver()
+                .unregisterContentObserver(new LocationContentObserver(null));
     }
 
     /**
