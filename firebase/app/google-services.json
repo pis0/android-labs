@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1080890659670",
+    "firebase_url": "https://multimobile-7d23d.firebaseio.com",
+    "project_id": "multimobile-7d23d",
+    "storage_bucket": "multimobile-7d23d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1080890659670:android:8306d6ee06d41e1775fcf7",
+        "android_client_info": {
+          "package_name": "com.multisofware.android.firebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1080890659670-kl8jsof8nebga7afhkgr7lbuf627cdfd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.multisofware.android.firebase",
+            "certificate_hash": "e140494d9c34764361d88ee31f4bccb170b6d6a1"
+          }
+        },
+        {
+          "client_id": "1080890659670-m2ljgacdeaesrc3c4k4vih3ndr457p2u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgkW47PDdYVqtsIeKBMNHikNDzpjzhyok"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1080890659670-m2ljgacdeaesrc3c4k4vih3ndr457p2u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
