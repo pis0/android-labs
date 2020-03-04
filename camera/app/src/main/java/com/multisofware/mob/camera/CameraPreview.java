@@ -1,4 +1,4 @@
-package com.multisofware.android.camera;
+package com.multisofware.mob.camera;
 
 import android.content.Context;
 import android.hardware.Camera;
