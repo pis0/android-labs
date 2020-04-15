@@ -146,8 +146,8 @@ public class FirebaseTest extends AppCompatActivity {
 
     private void processData(byte[] data) {
         try {
-//            barCodeDetector(480, data);
-            textDetector(2048, data);
+            barCodeDetector(480, data);
+//            textDetector(2048, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
             takePictureLock = false;
