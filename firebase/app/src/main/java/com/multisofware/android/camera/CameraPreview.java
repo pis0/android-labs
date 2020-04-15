@@ -15,6 +15,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder mHolder;
     private Camera mCamera;
 
+
+
     public CameraPreview(Context context, Camera camera) {
         super(context);
         mCamera = camera;
@@ -53,6 +55,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 //        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
         params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+//        params.setZoom(50);
         mCamera.setParameters( params);
 
 
