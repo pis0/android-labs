@@ -5,17 +5,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.hardware.Camera;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -31,6 +25,11 @@ import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.camera.CameraPreview;
 
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class FirebaseTest extends AppCompatActivity {
 
@@ -98,7 +97,7 @@ public class FirebaseTest extends AppCompatActivity {
         return camera;
     }
 
-    private android.hardware.Camera camera;
+    private android.hardware.Camera cameraa;
     private CameraPreview preview;
     private FrameLayout FLPreview;
 
@@ -111,18 +110,30 @@ public class FirebaseTest extends AppCompatActivity {
             return;
         }
 
-        camera = getCameraInstance();
+        cameraa = getCameraInstance();
 
-        preview = new CameraPreview(this, camera);
+        preview = new CameraPreview(this, cameraa);
         FLPreview = (FrameLayout) findViewById(R.id.camera_preview);
         FLPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (FLPreview == v && !takePictureLock) {
 
                     Toast.makeText(getApplicationContext(), "I am clicked", Toast.LENGTH_SHORT).show();
-                    camera.takePicture(null, null, pictureCallback);
-                    takePictureLock = true;
 
+                    cameraa.takePicture(null, null, new android.hardware.Camera.PictureCallback() {
+
+                        @Override
+                        public void onPictureTaken(byte[] data, android.hardware.Camera camera) {
+                            Toast.makeText(getApplicationContext(), "onPictureTaken", Toast.LENGTH_SHORT).show();
+                            Log.d(TAG, "onPictureTaken - data:" + data);
+
+                            processData(data);
+                            cameraa.startPreview();
+
+                        }
+
+                    });
+                    takePictureLock = true;
                 }
             }
         });
@@ -130,19 +141,6 @@ public class FirebaseTest extends AppCompatActivity {
         FLPreview.addView(preview);
     }
 
-
-    private android.hardware.Camera.PictureCallback pictureCallback = new android.hardware.Camera.PictureCallback() {
-
-        @Override
-        public void onPictureTaken(byte[] data, android.hardware.Camera camera) {
-            Toast.makeText(getApplicationContext(), "onPictureTaken", Toast.LENGTH_SHORT).show();
-            Log.d(TAG, "onPictureTaken - data:" + data);
-
-            processData(data);
-
-        }
-
-    };
 
     private void processData(byte[] data) {
         try {
