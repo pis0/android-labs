@@ -2,7 +2,6 @@ package com.multisofware.android.firebase;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,7 +15,6 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -121,8 +119,8 @@ public class FirebaseTest extends AppCompatActivity {
         android.hardware.Camera camera = null;
         try {
             // regular back camera
-            //camera = android.hardware.Camera.open();
-            camera = openFrontFacingCamera();
+            camera = android.hardware.Camera.open();
+            //camera = openFrontFacingCamera();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
         }
@@ -180,7 +178,7 @@ public class FirebaseTest extends AppCompatActivity {
         try {
 //            barCodeDetector(480, data);
 //            textDetector(2048, data);
-            faceDetector(480, data);
+            faceDetector(640, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
@@ -203,7 +201,9 @@ public class FirebaseTest extends AppCompatActivity {
 
         Matrix matrix = new Matrix();
         matrix.postScale(scaleWidth, scaleHeight);
-        matrix.postRotate(-90.0f);
+        matrix.postRotate(
+                90.0f
+        );
 
         Bitmap bmpOut = Bitmap.createBitmap(originalBmp,
                 0,
@@ -255,8 +255,8 @@ public class FirebaseTest extends AppCompatActivity {
                         .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
                         .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
                         .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
-//                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-//                        .enableTracking()
+                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                        .enableTracking()
                         .build();
 
 
@@ -298,8 +298,8 @@ public class FirebaseTest extends AppCompatActivity {
     private List<FirebaseVisionPoint> rightEyeBrowBottomContour;
     private List<FirebaseVisionPoint> noseBridgeContour;
     private List<FirebaseVisionPoint> noseBottomContour;
-    private FirebaseVisionFaceLandmark leftEar;
-    private FirebaseVisionFaceLandmark rightEar;
+    //    private FirebaseVisionFaceLandmark leftEar;
+//    private FirebaseVisionFaceLandmark rightEar;
     private FirebaseVisionFaceLandmark leftCheek;
     private FirebaseVisionFaceLandmark rightCheek;
     private FirebaseVisionFaceLandmark leftEye;
@@ -310,6 +310,9 @@ public class FirebaseTest extends AppCompatActivity {
     private FirebaseVisionFaceLandmark mouthBottom;
 
     private Rect boundingBox;
+
+    private float rY;
+    private float rZ;
 
     private PointF getListDiff(List<FirebaseVisionPoint> list1, List<FirebaseVisionPoint> list2, PointF boundingBoxDiff) {
         int len = Math.min(list1.size(), list2.size());
@@ -349,9 +352,13 @@ public class FirebaseTest extends AppCompatActivity {
     }
 
     private boolean extractFaceInfoFlag = false;
+
     private void extractFaceInfo(List<FirebaseVisionFace> faces) {
 
         for (FirebaseVisionFace face : faces) {
+
+            float currentRY = face.getHeadEulerAngleY();
+            float currentRZ = face.getHeadEulerAngleZ();
 
             Rect currentBoundingBox = face.getBoundingBox();
 
@@ -423,10 +430,23 @@ public class FirebaseTest extends AppCompatActivity {
             if (boundingBox == null)
                 boundingBox = currentBoundingBox;
 
+            // rotation
+            if (rY == 0) rY = currentRY;
+            if (rZ == 0) rZ = currentRZ;
 
+            Log.d(TAG, "currentRY " + currentRY);
+            Log.d(TAG, "currentRZ " + currentRZ);
+            float rYDiff = ((rY - Math.abs(rY - currentRY)) / rY) / 360;
+            float rZDiff = ((rZ - Math.abs(rZ - currentRZ)) / rZ) / 360;
+            Log.d(TAG, "rotation compare. " + rYDiff + ", " + rZDiff);
+
+            float bw = boundingBox.width();
+            float bh = boundingBox.height();
+            float cbw = currentBoundingBox.width();
+            float cbh = currentBoundingBox.height();
             PointF boundingBoxDiff = new PointF(
-                    (float) (boundingBox.width() - Math.abs(boundingBox.width() - currentBoundingBox.width())) / boundingBox.width(),
-                    (float) (boundingBox.height() - Math.abs(boundingBox.height() - currentBoundingBox.height())) / boundingBox.height()
+                    ((float) (bw - Math.abs(bw - cbw)) / bw) + rYDiff,
+                    ((float) (bh - Math.abs(bh - cbh)) / bh) + rZDiff
             );
             Log.d(TAG, "boundingBox compare. " + boundingBoxDiff);
 
@@ -538,6 +558,8 @@ public class FirebaseTest extends AppCompatActivity {
                     rightEyeBrowBottomContourDiff,
                     noseBridgeContourDiff,
                     noseBottomContourDiff,
+//                    leftEarDiff,
+//                    rightEarDiff,
                     leftCheekDiff,
                     rightCheekDiff,
                     leftEyeDiff,
@@ -549,26 +571,26 @@ public class FirebaseTest extends AppCompatActivity {
             };
 
             int errorCount = 0;
-            float valueToCompare = 0.09f;
+            float valueToCompare = 0.07f;
             for (PointF pf : temp) {
                 if (pf.x >= valueToCompare) errorCount++;
                 if (pf.y >= valueToCompare) errorCount++;
             }
 
-            if (errorCount >= 2) {
-                Toast.makeText(getApplicationContext(), "errorCount: " + errorCount, Toast.LENGTH_SHORT).show();
-            } else if(extractFaceInfoFlag) {
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-                alertDialogBuilder.setMessage("RECONHECEU!");
-                alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener()
-                {
-                    public void onClick(DialogInterface dialog, int whichButton)
-                    {
-                        finish();
-                    }
-                });
-                alertDialogBuilder.create().show();
-            }
+//            if (errorCount >= 2) {
+            Toast.makeText(getApplicationContext(), "errorCount: " + errorCount, Toast.LENGTH_SHORT).show();
+//            } else if(extractFaceInfoFlag) {
+//                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+//                alertDialogBuilder.setMessage("RECONHECEU!");
+//                alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener()
+//                {
+//                    public void onClick(DialogInterface dialog, int whichButton)
+//                    {
+//                        finish();
+//                    }
+//                });
+//                alertDialogBuilder.create().show();
+//            }
         }
 
         extractFaceInfoFlag = true;
