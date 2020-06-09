@@ -10,8 +10,10 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -37,6 +39,11 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.camera.CameraPreview;
+import com.multisofware.android.view.BackButton;
+import com.multisofware.android.view.qrcode.QRCodeMask;
+import com.multisofware.android.view.tickets.TicketsCounter;
+import com.multisofware.android.view.tickets.TicketsLabel;
+import com.multisofware.android.view.tickets.TicketsMask;
 
 import java.util.List;
 
@@ -52,19 +59,67 @@ public class FirebaseTest extends AppCompatActivity {
     };
 
 
+    //TODO to review
+    private BackButton backButton;
+    //
+    private TicketsMask ticketsMask;
+    private TicketsLabel ticketsLabel;
+    private TicketsCounter ticketsCounter;
+    //
+    private QRCodeMask qrCodeMask;
+
+
+    private TextView toastText;
+    private Toast toast;
+
+    private void createToast(Context context) {
+        toastText = new TextView(context);
+        toastText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        toastText.setTextColor(0xffffffff);
+        toastText.setWidth(600);
+
+        toast = new Toast(context);
+        toast.setDuration(Toast.LENGTH_SHORT);
+
+        //TODO to fix (tickets settings)
+//        toastText.setHeight(600);
+//        toastText.setPivotX(300);
+//        toastText.setPivotY(300);
+//        toastText.setY(0);
+//        toastText.setX(-500);
+//        toastText.setRotation(90);
+//        toast.setGravity(Gravity.CENTER_VERTICAL | Gravity.START, 0, 0);
+
+
+        toast.setView(toastText);
+    }
+
+    private void showToast(String message) {
+        toastText.setText(message);
+        toast.show();
+    }
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //TODO to review
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+        decorView.setSystemUiVisibility(uiOptions);
+
         FirebaseApp.initializeApp(this);
+
+        createToast(this);
 
         if (checkPermissions()) initCamera();
         else ActivityCompat.requestPermissions(
                 this,
                 PERMISSIONS,
                 REQUEST_PERMISSIONS);
-
     }
 
     private boolean checkPermissions() {
@@ -148,7 +203,9 @@ public class FirebaseTest extends AppCompatActivity {
             public void onClick(View v) {
                 if (FLPreview == v && !takePictureLock) {
 
-                    Toast.makeText(getApplicationContext(), "I am clicked", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(getApplicationContext(), "I am clicked", Toast.LENGTH_SHORT).show();
+                    showToast("I am clicked");
+
                     camera.takePicture(null, null, pictureCallback);
                     takePictureLock = true;
 
@@ -157,6 +214,23 @@ public class FirebaseTest extends AppCompatActivity {
         });
 
         FLPreview.addView(preview);
+
+
+        //TODO to review
+//        ticketsMask = new TicketsMask(this);
+//        FLPreview.addView(ticketsMask);
+//        ticketsLabel = new TicketsLabel(this);
+//        FLPreview.addView(ticketsLabel);
+//        ticketsCounter = new TicketsCounter(this);
+//        FLPreview.addView(ticketsCounter);
+        qrCodeMask = new QRCodeMask(this);
+        FLPreview.addView(qrCodeMask);
+        //
+        backButton = new BackButton(this);
+        FLPreview.addView(backButton);
+
+
+
     }
 
 
@@ -164,7 +238,8 @@ public class FirebaseTest extends AppCompatActivity {
 
         @Override
         public void onPictureTaken(byte[] data, android.hardware.Camera camera) {
-            Toast.makeText(getApplicationContext(), "onPictureTaken", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(getApplicationContext(), "onPictureTaken", Toast.LENGTH_SHORT).show();
+            showToast("onPictureTaken");
             Log.d(TAG, "onPictureTaken - data:" + data);
 
             processData(data);
@@ -176,9 +251,9 @@ public class FirebaseTest extends AppCompatActivity {
 
     private void processData(byte[] data) {
         try {
-//            barCodeDetector(480, data);
+            barCodeDetector(480, data);
 //            textDetector(2048, data);
-            faceDetector(640, data);
+//            faceDetector(640, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
@@ -202,7 +277,7 @@ public class FirebaseTest extends AppCompatActivity {
         Matrix matrix = new Matrix();
         matrix.postScale(scaleWidth, scaleHeight);
         matrix.postRotate(
-                90.0f
+                0.0f //90.0f
         );
 
         Bitmap bmpOut = Bitmap.createBitmap(originalBmp,
@@ -578,7 +653,8 @@ public class FirebaseTest extends AppCompatActivity {
             }
 
 //            if (errorCount >= 2) {
-            Toast.makeText(getApplicationContext(), "errorCount: " + errorCount, Toast.LENGTH_SHORT).show();
+//            Toast.makeText(getApplicationContext(), "errorCount: " + errorCount, Toast.LENGTH_SHORT).show();
+            showToast("errorCount: " + errorCount);
 //            } else if(extractFaceInfoFlag) {
 //                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
 //                alertDialogBuilder.setMessage("RECONHECEU!");
@@ -650,6 +726,8 @@ public class FirebaseTest extends AppCompatActivity {
     }
 
     private void textDetector(int maxSize, byte[] data) {
+
+
 
         FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
 
