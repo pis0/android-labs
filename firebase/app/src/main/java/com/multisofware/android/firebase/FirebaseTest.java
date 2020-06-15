@@ -26,6 +26,11 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
@@ -52,11 +57,6 @@ import com.multisofware.android.view.tickets.TicketsMask;
 
 import java.io.IOException;
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 
 public class FirebaseTest extends AppCompatActivity {
@@ -290,117 +290,27 @@ public class FirebaseTest extends AppCompatActivity {
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;
         options.inScaled = true;
         options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
-        options.inTargetDensity = DisplayMetrics.DENSITY_DEVICE_STABLE;
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        options.inTargetDensity = (int) (metrics.density * 160f);
         options.inMutable = false;
 
         Bitmap originalBmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-        //int originalW = originalBmp.getWidth();
-//    int originalH = originalBmp.getHeight();
         Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight());
 
+        //TODO to implement crop
+        FirebaseVisionImages firebaseVisionImages = new FirebaseVisionImages(this);
+        firebaseVisionImages.setBitmap(originalBmp);
 
-        // old
-//    Bitmap bmpOut = Bitmap.createScaledBitmap(originalBmp,
-//      maxSize,
-//      (int) (((double) maxSize / (double) originalW) * (double) originalH),
-//      false);
-
-        // new
-
-        Bitmap bmpOut = Bitmap.createBitmap(
-                originalBmp,
-                3 * (originalBmp.getWidth() / 4), // 0
-                1 * (originalBmp.getHeight() / 3),
-                originalBmp.getWidth() / 4, //originalW
-                originalBmp.getHeight() / 3,
-                matrix,
-                false);
-
-
-        float c = 2.0f;
-        float b = 1.0f;
-        float s = 1.0f;
-
-        float lumR = 0.3086f;
-        float lumG = 0.6094f;
-        float lumB = 0.0820f;
-        float t = (1.0f - c) / 2.0f;
-        float sr = (1.0f - s) * lumR;
-        float sg = (1.0f - s) * lumG;
-        float sb = (1.0f - s) * lumB;
-
-        float[] colorTransform = {
-                c * (sr + s), c * (sr), c * (sr), 0, 0,
-                c * (sg), c * (sg + s), c * (sg), 0, 0,
-                c * (sb), c * (sb), c * (sb + s), 0, 0,
-                0, 0, 0, 1, 0,
-                t + b, t + b, t + b, 0, 1,
-        };
-
-
-        float[] matrix_blur = {
-                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
-                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
-                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f};
-
-        float[] matrix_sharpen = {
-                0, -1, 0,
-                -1, 5.333f, -1,
-                0, -1, 0};
-
-        Bitmap result = Bitmap.createBitmap(bmpOut.getWidth(), bmpOut.getHeight(), bmpOut.getConfig());
-        RenderScript renderScript = RenderScript.create(this);
-        Allocation input = Allocation.createFromBitmap(renderScript, bmpOut);
-        Allocation output = Allocation.createFromBitmap(renderScript, result);
-        ScriptIntrinsicConvolve3x3 convolution = ScriptIntrinsicConvolve3x3.create(renderScript, Element.U8_4(renderScript));
-        convolution.setInput(input);
-        convolution.setCoefficients(matrix_sharpen); // set matrix here
-        convolution.forEach(output);
-        output.copyTo(result);
-        renderScript.destroy();
-
-
-        ColorMatrix colorMatrix = new ColorMatrix();
-//        colorMatrix.setSaturation(0);
-//        colorMatrix.setRGB2YUV(); // red map
-//        colorMatrix.set(colorTransform); //Apply the Polaroid Color
-
-        ColorMatrixColorFilter colorFilter = new ColorMatrixColorFilter(colorMatrix);
-        Paint paint = new Paint();
-        paint.setColorFilter(colorFilter);
-
-
-        Canvas canvas = new Canvas(result);
-        canvas.drawBitmap(result, 0, 0, paint);
-        canvas.setBitmap(null);
-
-        FirebaseVisionImage firebaseVisionImage = null;
-        if (bmpOut != null) {
-//        if (originalBmp != null) {
-//        if (bwBitmap != null) {
-//            firebaseVisionImage = FirebaseVisionImage.fromBitmap(bwBitmap);
-            firebaseVisionImage = FirebaseVisionImage.fromBitmap(result);
-//            firebaseVisionImage = FirebaseVisionImage.fromBitmap(originalBmp);
-
-            //TODO to delete
-            try {
-//                createImageFile("temp", originalBmp);
-                createImageFile("temp", result);
-//                createImageFile("temp", bwBitmap);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-//            Log.d(TAG, "processData - bwBitmap:" + bwBitmap + " - " + bwBitmap.getWidth() + ", " + bwBitmap.getHeight());
-//            Log.d(TAG, "processData - bmpOut:" + bmpOut + " - " + bmpOut.getWidth() + ", " + bmpOut.getHeight());
-            Log.d(TAG, "processData - result:" + result + " - " + result.getWidth() + ", " + result.getHeight());
-//      originalBmp.recycle();
-//      originalBmp = null;
-            return firebaseVisionImage;
+        try {
+            createImageFile("temp", firebaseVisionImages.imagesToValidate[1]);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(firebaseVisionImages.imagesToValidate[1]);
+        Log.d(TAG, "processData - result:" + firebaseVisionImages.imagesToValidate[1] + " - " + firebaseVisionImages.imagesToValidate[1].getWidth() + ", " + firebaseVisionImages.imagesToValidate[1].getHeight());
+        return firebaseVisionImage;
 
-        return null;
     }
 
     private void faceDetector(int maxSize, byte[] data) {

@@ -44,47 +44,39 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Camera.Size resolveCameraSize(Camera.Parameters params) {
         Camera.Size previewSize = params.getPreviewSize();
         Log.d(TAG, "resolveCameraSize - previewSize: " + previewSize.width + ", " + previewSize.height);
-
-        float previewRatio = previewSize.width / previewSize.height;
-
-        float closerWidth = 0;
+        float previewRatio = ((float) previewSize.width) / ((float)previewSize.height);
+//        float closerWidth = 0;
         float closerDiff = Integer.MAX_VALUE;
         float currentDiff = 0;
 
-        for (Camera.Size size : params.getSupportedPictureSizes()) {
-
-            Log.d(TAG, "resolveCameraSize - getSupportedPictureSizes: " + size.width + ", " + size.height);
-
-            currentDiff = Math.abs(size.width - previewSize.width);
-            if (currentDiff < closerDiff) {
-                closerDiff = currentDiff;
-                closerWidth = size.width;
-            }
-        }
-
-        ArrayList<Camera.Size> validSizes = new ArrayList<>();
-        for (Camera.Size size : params.getSupportedPictureSizes()) {
-            if (closerWidth == size.width) validSizes.add(size);
-        }
+//        for (Camera.Size size : params.getSupportedPictureSizes()) {
+//            Log.d(TAG, "resolveCameraSize - getSupportedPictureSizes: " + size.width + ", " + size.height);
+//            currentDiff = Math.abs(size.width - previewSize.width);
+//            if (currentDiff < closerDiff) {
+//                closerDiff = currentDiff;
+//                closerWidth = size.width;
+//            }
+//        }
+//        ArrayList<Camera.Size> validSizes = new ArrayList<>();
+//        for (Camera.Size size : params.getSupportedPictureSizes()) {
+//            if (closerWidth == size.width) validSizes.add(size);
+//        }
 
         Camera.Size closerSize = null;
 
-        closerDiff = Integer.MAX_VALUE;
-        for (Camera.Size size : validSizes) {
-            float currentRatio = size.width / size.height;
+//        closerDiff = Integer.MAX_VALUE;
+//        for (Camera.Size size : validSizes) {
+        for (Camera.Size size : params.getSupportedPictureSizes()) {
+            float currentRatio = ((float) size.width) / ((float)size.height);
             currentDiff = Math.abs(currentRatio - previewRatio);
+            Log.d(TAG, "resolveCameraSize - getSupportedPictureSizes: " + size.width + ", " + size.height + ", " + currentRatio + ", " + currentDiff);
             if (currentDiff < closerDiff) {
                 closerDiff = currentDiff;
                 closerSize = size;
             }
         }
-
         Log.d(TAG, "resolveCameraSize - closeSize: " + (closerSize != null ? closerSize.width + "x" + closerSize.height : "null"));
 
-        //TODO to delete
-        closerSize.width = 3840;
-        closerSize.height = 2160;
-        //3840, 2160
         return closerSize;
     }
 
