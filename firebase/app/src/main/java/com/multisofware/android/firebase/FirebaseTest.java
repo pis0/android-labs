@@ -5,21 +5,26 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrix;
+import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.provider.MediaStore;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicConvolve3x3;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -45,7 +50,14 @@ import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
 import com.multisofware.android.view.tickets.TicketsMask;
 
+import java.io.IOException;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 
 public class FirebaseTest extends AppCompatActivity {
 
@@ -82,13 +94,13 @@ public class FirebaseTest extends AppCompatActivity {
         toast.setDuration(Toast.LENGTH_SHORT);
 
         //TODO to fix (tickets settings)
-//        toastText.setHeight(600);
-//        toastText.setPivotX(300);
-//        toastText.setPivotY(300);
-//        toastText.setY(0);
-//        toastText.setX(-500);
-//        toastText.setRotation(90);
-//        toast.setGravity(Gravity.CENTER_VERTICAL | Gravity.START, 0, 0);
+        toastText.setHeight(600);
+        toastText.setPivotX(300);
+        toastText.setPivotY(300);
+        toastText.setY(0);
+        toastText.setX(-500);
+        toastText.setRotation(90);
+        toast.setGravity(Gravity.CENTER_VERTICAL | Gravity.START, 0, 0);
 
 
         toast.setView(toastText);
@@ -100,16 +112,15 @@ public class FirebaseTest extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         //TODO to review
-        View decorView = getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
-        decorView.setSystemUiVisibility(uiOptions);
+//        View decorView = getWindow().getDecorView();
+//        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_LOW_PROFILE;
+//        decorView.setSystemUiVisibility(uiOptions);
 
         FirebaseApp.initializeApp(this);
 
@@ -217,18 +228,17 @@ public class FirebaseTest extends AppCompatActivity {
 
 
         //TODO to review
-//        ticketsMask = new TicketsMask(this);
-//        FLPreview.addView(ticketsMask);
-//        ticketsLabel = new TicketsLabel(this);
-//        FLPreview.addView(ticketsLabel);
-//        ticketsCounter = new TicketsCounter(this);
-//        FLPreview.addView(ticketsCounter);
-        qrCodeMask = new QRCodeMask(this);
-        FLPreview.addView(qrCodeMask);
+        ticketsMask = new TicketsMask(this);
+        FLPreview.addView(ticketsMask);
+        ticketsLabel = new TicketsLabel(this);
+        FLPreview.addView(ticketsLabel);
+        ticketsCounter = new TicketsCounter(this);
+        FLPreview.addView(ticketsCounter);
+//        qrCodeMask = new QRCodeMask(this);
+//        FLPreview.addView(qrCodeMask);
         //
         backButton = new BackButton(this);
         FLPreview.addView(backButton);
-
 
 
     }
@@ -251,8 +261,8 @@ public class FirebaseTest extends AppCompatActivity {
 
     private void processData(byte[] data) {
         try {
-            barCodeDetector(480, data);
-//            textDetector(2048, data);
+//            barCodeDetector(480, data);
+            textDetector(2048, data);
 //            faceDetector(640, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
@@ -262,44 +272,133 @@ public class FirebaseTest extends AppCompatActivity {
 
     private FirebaseVisionImage createFirebaseVisionImage(int maxSize, byte[] data) {
 
-        Bitmap originalBmp = BitmapFactory.decodeByteArray(data, 0, data.length);
-        int originalW = originalBmp.getWidth();
-        int originalH = originalBmp.getHeight();
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        int originalW = options.outWidth;
+        int originalH = options.outHeight;
 
         Log.d(TAG, "processData - MAX_SIZE: " + maxSize + ", originalW: " + originalW + ", originalH: " + originalH);
 
-        int newWidth = maxSize;
-        int newHeight = (int) (((double) maxSize / (double) originalW) * (double) originalH);
-
-        float scaleWidth = ((float) newWidth) / originalW;
-        float scaleHeight = ((float) newHeight) / originalH;
-
+        //float scale = (float) ((double) maxSize / (double) originalH);
         Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleHeight);
         matrix.postRotate(
-                0.0f //90.0f
+                90.0f
         );
 
-        Bitmap bmpOut = Bitmap.createBitmap(originalBmp,
-                0,
-                0,
-                originalW,
-                originalH,
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        options.inScaled = true;
+        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
+        options.inTargetDensity = DisplayMetrics.DENSITY_DEVICE_STABLE;
+        options.inMutable = false;
+
+        Bitmap originalBmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        //int originalW = originalBmp.getWidth();
+//    int originalH = originalBmp.getHeight();
+        Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight());
+
+
+        // old
+//    Bitmap bmpOut = Bitmap.createScaledBitmap(originalBmp,
+//      maxSize,
+//      (int) (((double) maxSize / (double) originalW) * (double) originalH),
+//      false);
+
+        // new
+
+        Bitmap bmpOut = Bitmap.createBitmap(
+                originalBmp,
+                3 * (originalBmp.getWidth() / 4), // 0
+                1 * (originalBmp.getHeight() / 3),
+                originalBmp.getWidth() / 4, //originalW
+                originalBmp.getHeight() / 3,
                 matrix,
                 false);
 
-//        Bitmap bmpOut = Bitmap.createScaledBitmap(originalBmp,
-//                maxSize,
-//                (int) (((double) maxSize / (double) originalW) * (double) originalH),
-//                false);
 
+        float c = 2.0f;
+        float b = 1.0f;
+        float s = 1.0f;
+
+        float lumR = 0.3086f;
+        float lumG = 0.6094f;
+        float lumB = 0.0820f;
+        float t = (1.0f - c) / 2.0f;
+        float sr = (1.0f - s) * lumR;
+        float sg = (1.0f - s) * lumG;
+        float sb = (1.0f - s) * lumB;
+
+        float[] colorTransform = {
+                c * (sr + s), c * (sr), c * (sr), 0, 0,
+                c * (sg), c * (sg + s), c * (sg), 0, 0,
+                c * (sb), c * (sb), c * (sb + s), 0, 0,
+                0, 0, 0, 1, 0,
+                t + b, t + b, t + b, 0, 1,
+        };
+
+
+        float[] matrix_blur = {
+                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f,
+                1.0f / 9.0f, 1.0f / 9.0f, 1.0f / 9.0f};
+
+        float[] matrix_sharpen = {
+                0, -1, 0,
+                -1, 5.333f, -1,
+                0, -1, 0};
+
+        Bitmap result = Bitmap.createBitmap(bmpOut.getWidth(), bmpOut.getHeight(), bmpOut.getConfig());
+        RenderScript renderScript = RenderScript.create(this);
+        Allocation input = Allocation.createFromBitmap(renderScript, bmpOut);
+        Allocation output = Allocation.createFromBitmap(renderScript, result);
+        ScriptIntrinsicConvolve3x3 convolution = ScriptIntrinsicConvolve3x3.create(renderScript, Element.U8_4(renderScript));
+        convolution.setInput(input);
+        convolution.setCoefficients(matrix_sharpen); // set matrix here
+        convolution.forEach(output);
+        output.copyTo(result);
+        renderScript.destroy();
+
+
+        ColorMatrix colorMatrix = new ColorMatrix();
+//        colorMatrix.setSaturation(0);
+//        colorMatrix.setRGB2YUV(); // red map
+//        colorMatrix.set(colorTransform); //Apply the Polaroid Color
+
+        ColorMatrixColorFilter colorFilter = new ColorMatrixColorFilter(colorMatrix);
+        Paint paint = new Paint();
+        paint.setColorFilter(colorFilter);
+
+
+        Canvas canvas = new Canvas(result);
+        canvas.drawBitmap(result, 0, 0, paint);
+        canvas.setBitmap(null);
 
         FirebaseVisionImage firebaseVisionImage = null;
         if (bmpOut != null) {
-            firebaseVisionImage = FirebaseVisionImage.fromBitmap(bmpOut);
-            Log.d(TAG, "processData - bmpOut:" + bmpOut + " - " + bmpOut.getWidth() + ", " + bmpOut.getHeight());
+//        if (originalBmp != null) {
+//        if (bwBitmap != null) {
+//            firebaseVisionImage = FirebaseVisionImage.fromBitmap(bwBitmap);
+            firebaseVisionImage = FirebaseVisionImage.fromBitmap(result);
+//            firebaseVisionImage = FirebaseVisionImage.fromBitmap(originalBmp);
+
+            //TODO to delete
+            try {
+//                createImageFile("temp", originalBmp);
+                createImageFile("temp", result);
+//                createImageFile("temp", bwBitmap);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+//            Log.d(TAG, "processData - bwBitmap:" + bwBitmap + " - " + bwBitmap.getWidth() + ", " + bwBitmap.getHeight());
+//            Log.d(TAG, "processData - bmpOut:" + bmpOut + " - " + bmpOut.getWidth() + ", " + bmpOut.getHeight());
+            Log.d(TAG, "processData - result:" + result + " - " + result.getWidth() + ", " + result.getHeight());
+//      originalBmp.recycle();
+//      originalBmp = null;
             return firebaseVisionImage;
         }
+
 
         return null;
     }
@@ -728,8 +827,7 @@ public class FirebaseTest extends AppCompatActivity {
     private void textDetector(int maxSize, byte[] data) {
 
 
-
-        FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
+        final FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
 
         if (firebaseVisionImage == null) {
             Log.d(TAG, "textDetector error: firebaseVisionImage is null");
@@ -748,6 +846,7 @@ public class FirebaseTest extends AppCompatActivity {
                         Log.d(TAG, "textDetector.onSuccess - firebaseVisionText: " + firebaseVisionText);
                         extractText(firebaseVisionText);
                         takePictureLock = false;
+
                     }
                 })
                 .addOnFailureListener(
@@ -791,6 +890,76 @@ public class FirebaseTest extends AppCompatActivity {
                 }
             }
         }
+    }
+
+
+    private void createImageFile(String ticketNumber, Bitmap original) throws IOException {
+
+        Log.d(TAG, "createImageFile - Bitmap original - " + original.getWidth() + ", " + original.getHeight());
+
+
+        // Save image to gallery
+        String savedImageURL = MediaStore.Images.Media.insertImage(
+                getContentResolver(),
+                original,
+                "temp",
+                "temp"
+        );
+
+//        final int MAX_SIZE = 720;
+//        final int QUALITY = 90;
+//
+//        int originalW = original.getWidth();
+//        int originalH = original.getHeight();
+//
+//        Bitmap out = Bitmap.createScaledBitmap(original,
+//                (int) (((double) MAX_SIZE / (double) originalH) * (double) originalW),
+//                MAX_SIZE,
+//                false);
+//
+//        if (out != null)
+//            Log.d(TAG, "Bitmap out - " + out.getWidth() + ", " + out.getHeight());
+//
+//        //@SuppressLint("SimpleDateFormat")
+//        //String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+//
+//        String imageFileName = "JPEG_" + ticketNumber + "_"; //+ timeStamp + "_";
+////        File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM).toString() + "/Camera/temp";
+//        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+////        File dir = new File(Environment.getExternalStorageDirectory().toString());
+//
+//
+//
+////        if (!dir.exists()) {
+////            boolean created = dir.mkdir();
+////            Log.d(TAG, "dir: " + dir + ", created: " + created);
+////        }
+//
+//        File image = File.createTempFile(
+//                imageFileName,
+//                ".jpg",
+//                storageDir //dir //
+//        );
+//
+//        Log.d(TAG, "image: " + image);
+//
+//
+//
+//        File file = new File(image.getAbsolutePath());
+//        FileOutputStream fOut;
+//        try {
+//            fOut = new FileOutputStream(file);
+//            out.compress(Bitmap.CompressFormat.PNG, QUALITY, fOut);
+//            fOut.flush();
+//            fOut.close();
+//            original.recycle();
+//            out.recycle();
+//        } catch (Exception e) {
+//            Log.e(TAG, "onActivityResult - REQUEST_TAKE_PHOTO - error: " + e.getMessage(), e);
+//        }
+//
+//        addImageToGallery(file.getAbsolutePath(), this);
+
     }
 
 

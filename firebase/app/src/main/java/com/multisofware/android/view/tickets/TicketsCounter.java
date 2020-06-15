@@ -24,14 +24,14 @@ public class TicketsCounter extends AppCompatTextView {
         super.setLayoutParams(params);
 
 
-        super.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+        super.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         super.setTextColor(0xffaaaaaa);
         super.setBackgroundColor(0xcc333333);
         super.setPivotX(0);
         super.setPivotY(0);
         super.setRotation(90);
         super.setX(width / 3);
-        super.setPadding(0, 20, 40, 0);
+        super.setPadding(40, 20, 0, 0);
         super.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f);
 
         setCounter(0, 0);

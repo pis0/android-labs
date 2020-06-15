@@ -7,6 +7,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -39,6 +40,54 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // empty. Take care of releasing the Camera preview in your activity.
     }
 
+
+    private Camera.Size resolveCameraSize(Camera.Parameters params) {
+        Camera.Size previewSize = params.getPreviewSize();
+        Log.d(TAG, "resolveCameraSize - previewSize: " + previewSize.width + ", " + previewSize.height);
+
+        float previewRatio = previewSize.width / previewSize.height;
+
+        float closerWidth = 0;
+        float closerDiff = Integer.MAX_VALUE;
+        float currentDiff = 0;
+
+        for (Camera.Size size : params.getSupportedPictureSizes()) {
+
+            Log.d(TAG, "resolveCameraSize - getSupportedPictureSizes: " + size.width + ", " + size.height);
+
+            currentDiff = Math.abs(size.width - previewSize.width);
+            if (currentDiff < closerDiff) {
+                closerDiff = currentDiff;
+                closerWidth = size.width;
+            }
+        }
+
+        ArrayList<Camera.Size> validSizes = new ArrayList<>();
+        for (Camera.Size size : params.getSupportedPictureSizes()) {
+            if (closerWidth == size.width) validSizes.add(size);
+        }
+
+        Camera.Size closerSize = null;
+
+        closerDiff = Integer.MAX_VALUE;
+        for (Camera.Size size : validSizes) {
+            float currentRatio = size.width / size.height;
+            currentDiff = Math.abs(currentRatio - previewRatio);
+            if (currentDiff < closerDiff) {
+                closerDiff = currentDiff;
+                closerSize = size;
+            }
+        }
+
+        Log.d(TAG, "resolveCameraSize - closeSize: " + (closerSize != null ? closerSize.width + "x" + closerSize.height : "null"));
+
+        //TODO to delete
+        closerSize.width = 3840;
+        closerSize.height = 2160;
+        //3840, 2160
+        return closerSize;
+    }
+
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
         if (mHolder.getSurface() == null) return;
 
@@ -48,13 +97,21 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             Log.e(TAG, "surfaceChanged error: " + e.getMessage(), e);
         }
 
-        // set preview size and make any resize, rotate or
-        // reformatting changes here
-        mCamera.setDisplayOrientation(90);
-        Camera.Parameters params = mCamera.getParameters();
-        params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-        params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
-        mCamera.setParameters( params);
+        try {
+            // set preview size and make any resize, rotate or
+            // reformatting changes here
+            mCamera.setDisplayOrientation(90);
+            Camera.Parameters params = mCamera.getParameters();
+
+            //TODO to review
+            Camera.Size camSize = resolveCameraSize(params);
+            params.setPictureSize(camSize.width, camSize.height);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
+            mCamera.setParameters(params);
+        } catch (Exception e) {
+            Log.e(TAG, "surfaceChanged error: " + e.getMessage(), e);
+        }
 
 
         try {
