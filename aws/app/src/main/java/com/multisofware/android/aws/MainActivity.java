@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void init() {
 
-        Float similarityThreshold = 70F;
+        Float similarityThreshold = 90F;
         String sourceImage = "source.jpg";
         String targetImage = "target.jpg";
         ByteBuffer sourceImageBytes = null;
@@ -47,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
             public String getAWSAccessKeyId() {
                 return "AKIAIPMQA5JKUG37UOSA";
             }
-
             @Override
             public String getAWSSecretKey() {
                 return "2jO9KI9FnxwD9V2YOjH8iSGJzXx/PT5s0S4dL+4f";
