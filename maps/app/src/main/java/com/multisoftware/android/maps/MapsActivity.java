@@ -1,32 +1,39 @@
 package com.multisoftware.android.maps;
 
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+import android.widget.Toast;
+
+import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.fragment.app.FragmentActivity;
-
 public class MapsActivity extends FragmentActivity
-        implements OnMapReadyCallback //,
-//        GoogleMap.OnInfoWindowClickListener
-{
+        implements OnMapReadyCallback,
+        GoogleMap.OnInfoWindowClickListener {
 
     private GoogleMap mMap;
 
@@ -117,28 +124,60 @@ public class MapsActivity extends FragmentActivity
 
 
         //TODO to review (navigation test)
-//        address = getLocationFromAddress(this, "Rua José de Alencar, 94, chapecó sc");
-//        Marker marker = mMap.addMarker(
-//                new MarkerOptions()
-//                        .position(address)
-//                        .title("Minha Fucking Casa")
-//        );
-//        marker.showInfoWindow();
-//        mMap.setOnInfoWindowClickListener((GoogleMap.OnInfoWindowClickListener) this);
-//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(address, 15));
+//        Bitmap bmp = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+//        bmp.eraseColor(0xffffff00);
+        BitmapDescriptor icon = BitmapDescriptorFactory.fromBitmap(createCustomMarker(24));
+
+//        BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.ic_base_marker);
+        //BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
+
+        address = getLocationFromAddress(this, "Rua José de Alencar, 94, chapecó sc");
+        Marker marker = mMap.addMarker(
+                new MarkerOptions()
+                        .position(address)
+                        .snippet("(lat:" + address.latitude + ", lng:" + address.longitude + ")")
+                        .title("Minha Fucking Casa")
+                        .icon(icon)
+        );
+        marker.showInfoWindow();
+        mMap.setOnInfoWindowClickListener((GoogleMap.OnInfoWindowClickListener) this);
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(address, 15));
+
+//        bmp.recycle();
 
 
     }
 
 
-//    @Override
-//    public void onInfoWindowClick(Marker marker) {
-//        Toast.makeText(this, "Info window clicked",
-//                Toast.LENGTH_SHORT).show();
-//
-//        Intent navigation = new Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=" + address.latitude + "," + address.longitude));
-//        startActivity(navigation);
-//        //finishAndRemoveTask();
-//    }
+    @Override
+    public void onInfoWindowClick(Marker marker) {
+        Toast.makeText(this, "Info window clicked",
+                Toast.LENGTH_SHORT).show();
+
+        Intent navigation = new Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=" + address.latitude + "," + address.longitude));
+        startActivity(navigation);
+        //finishAndRemoveTask();
+    }
+
+
+    public Bitmap createCustomMarker(int order) {
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_base_marker);
+
+        Bitmap.Config conf = Bitmap.Config.ARGB_8888;
+        Bitmap bmp = Bitmap.createBitmap(icon.getWidth(), icon.getHeight(), conf);
+        Canvas canvas = new Canvas(bmp);
+
+        Paint color = new Paint();
+        color.setTextSize(50);
+        color.setFakeBoldText(true);
+        color.setTextAlign(Paint.Align.CENTER);
+        color.setColor(0xff777777);
+
+        canvas.drawBitmap(icon, 0, 0, color);
+        canvas.drawText(String.valueOf(order), canvas.getWidth() >> 1, (canvas.getHeight() >> 1) - 5, color);
+
+        return bmp;
+    }
 
 }
