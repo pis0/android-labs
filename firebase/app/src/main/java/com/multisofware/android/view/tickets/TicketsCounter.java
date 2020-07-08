@@ -38,7 +38,7 @@ public class TicketsCounter extends AppCompatTextView {
     }
 
     public void setCounter(int validated, int total) {
-        super.setText("VALIDADOS: " + validated + "/" + total);
+        super.setText(("Validados: " + validated + "/" + total).toUpperCase());
     }
 
 }

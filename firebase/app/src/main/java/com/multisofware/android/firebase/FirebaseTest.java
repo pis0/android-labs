@@ -5,20 +5,11 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Matrix;
-import android.graphics.Paint;
+import android.graphics.BitmapRegionDecoder;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicConvolve3x3;
-import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -49,7 +40,9 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.camera.CameraPreview;
+import com.multisofware.android.camera.IAutoFocusCallback;
 import com.multisofware.android.view.BackButton;
+import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
 import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
@@ -79,6 +72,7 @@ public class FirebaseTest extends AppCompatActivity {
     private TicketsCounter ticketsCounter;
     //
     private QRCodeMask qrCodeMask;
+    private QRCodeLabel qrCodeLabel;
 
 
     private TextView toastText;
@@ -94,13 +88,13 @@ public class FirebaseTest extends AppCompatActivity {
         toast.setDuration(Toast.LENGTH_SHORT);
 
         //TODO to fix (tickets settings)
-        toastText.setHeight(600);
-        toastText.setPivotX(300);
-        toastText.setPivotY(300);
-        toastText.setY(0);
-        toastText.setX(-500);
-        toastText.setRotation(90);
-        toast.setGravity(Gravity.CENTER_VERTICAL | Gravity.START, 0, 0);
+//        toastText.setHeight(600);
+//        toastText.setPivotX(300);
+//        toastText.setPivotY(300);
+//        toastText.setY(0);
+//        toastText.setX(-500);
+//        toastText.setRotation(90);
+//        toast.setGravity(Gravity.CENTER_VERTICAL | Gravity.START, 0, 0);
 
 
         toast.setView(toastText);
@@ -210,15 +204,23 @@ public class FirebaseTest extends AppCompatActivity {
 
         preview = new CameraPreview(this, camera);
         FLPreview = (FrameLayout) findViewById(R.id.camera_preview);
+
+
         FLPreview.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 if (FLPreview == v && !takePictureLock) {
 
-                    //Toast.makeText(getApplicationContext(), "I am clicked", Toast.LENGTH_SHORT).show();
-                    showToast("I am clicked");
-
-                    camera.takePicture(null, null, pictureCallback);
-                    takePictureLock = true;
+                    //TODO to review
+                    preview.autoFocus(new IAutoFocusCallback() {
+                        @Override
+                        public void run(Boolean success) {
+                            if(success) {
+                                showToast("I am clicked");
+                                camera.takePicture(null, null, pictureCallback);
+                                takePictureLock = true;
+                            }
+                        }
+                    });
 
                 }
             }
@@ -228,14 +230,17 @@ public class FirebaseTest extends AppCompatActivity {
 
 
         //TODO to review
-        ticketsMask = new TicketsMask(this);
-        FLPreview.addView(ticketsMask);
-        ticketsLabel = new TicketsLabel(this);
-        FLPreview.addView(ticketsLabel);
-        ticketsCounter = new TicketsCounter(this);
-        FLPreview.addView(ticketsCounter);
-//        qrCodeMask = new QRCodeMask(this);
-//        FLPreview.addView(qrCodeMask);
+//        ticketsMask = new TicketsMask(this);
+//        FLPreview.addView(ticketsMask);
+//        ticketsLabel = new TicketsLabel(this);
+//        FLPreview.addView(ticketsLabel);
+//        ticketsCounter = new TicketsCounter(this);
+//        FLPreview.addView(ticketsCounter);
+        qrCodeMask = new QRCodeMask(this);
+        FLPreview.addView(qrCodeMask);
+        qrCodeLabel = new QRCodeLabel(this);
+        FLPreview.addView(qrCodeLabel);
+
         //
         backButton = new BackButton(this);
         FLPreview.addView(backButton);
@@ -269,47 +274,90 @@ public class FirebaseTest extends AppCompatActivity {
         }
     }
 
+    private int resolveSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+            while ((halfHeight / inSampleSize) >= reqHeight
+                    && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return inSampleSize;
+    }
 
     private FirebaseVisionImage createFirebaseVisionImage(int maxSize, byte[] data) {
 
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(data, 0, data.length, options);
-        int originalW = options.outWidth;
-        int originalH = options.outHeight;
+//        final BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inJustDecodeBounds = true;
+//        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+//        int originalW = options.outWidth;
+//        int originalH = options.outHeight;
+//
+//        Log.d(TAG, "processData - MAX_SIZE: " + maxSize + ", originalW: " + originalW + ", originalH: " + originalH);
+//
+//        //float scale = (float) ((double) maxSize / (double) originalH);
+//        Matrix matrix = new Matrix();
+//        matrix.postRotate(
+//                90.0f
+//        );
 
-        Log.d(TAG, "processData - MAX_SIZE: " + maxSize + ", originalW: " + originalW + ", originalH: " + originalH);
+        BitmapFactory.Options options1 = new BitmapFactory.Options();
+        options1.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options1);
+        final int originalW1 = options1.outWidth;
+        final int originalH1 = options1.outHeight;
 
-        //float scale = (float) ((double) maxSize / (double) originalH);
-        Matrix matrix = new Matrix();
-        matrix.postRotate(
-                90.0f
-        );
+        BitmapFactory.Options options2 = new BitmapFactory.Options();
+        float scale = (float) maxSize / (float) originalH1;
+        options2.inSampleSize = resolveSampleSize(options2, (int) (originalW1 * scale), maxSize);
+        options2.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options2);
+        final int originalW2 = options2.outWidth;
+        final int originalH2 = options2.outHeight;
 
-        options.inJustDecodeBounds = false;
-        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-        options.inScaled = true;
-        options.inDensity = DisplayMetrics.DENSITY_DEFAULT;
-        DisplayMetrics metrics = getResources().getDisplayMetrics();
-        options.inTargetDensity = (int) (metrics.density * 160f);
-        options.inMutable = false;
+        Bitmap originalBmp = null;
+        try {
 
-        Bitmap originalBmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-        Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight());
+            BitmapRegionDecoder rDecoder = BitmapRegionDecoder.newInstance(
+                    data,
+                    0,
+                    data.length,
+                    false
+            );
+            originalBmp = rDecoder.decodeRegion(
+                    new Rect((originalW2 / 3) * 2, originalH2 / 3, (originalW2 / 3) * 3, (originalH2 / 3) * 2),
+                    options2
+            );
+            rDecoder.recycle();
+        } catch (Exception e) {
+            Log.e(TAG, "processData error: " + e.getMessage(), e);
+        }
+
 
         //TODO to implement crop
-        FirebaseVisionImages firebaseVisionImages = new FirebaseVisionImages(this);
-        firebaseVisionImages.setBitmap(originalBmp);
+//        FirebaseVisionImages firebaseVisionImages = new FirebaseVisionImages(this);
+//        firebaseVisionImages.setBitmap(originalBmp);
+
 
         try {
-            createImageFile("temp", firebaseVisionImages.imagesToValidate[1]);
+
+            if (originalBmp != null) {
+                Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight() + ", density: " + originalBmp.getDensity());
+                createImageFile("temp", originalBmp);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(firebaseVisionImages.imagesToValidate[1]);
-        Log.d(TAG, "processData - result:" + firebaseVisionImages.imagesToValidate[1] + " - " + firebaseVisionImages.imagesToValidate[1].getWidth() + ", " + firebaseVisionImages.imagesToValidate[1].getHeight());
-        return firebaseVisionImage;
+        return null;
+//        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(firebaseVisionImages.imagesToValidate[1]);
+//        Log.d(TAG, "processData - result:" + firebaseVisionImages.imagesToValidate[1] + " - " + firebaseVisionImages.imagesToValidate[1].getWidth() + ", " + firebaseVisionImages.imagesToValidate[1].getHeight());
+//        return firebaseVisionImage;
+
 
     }
 

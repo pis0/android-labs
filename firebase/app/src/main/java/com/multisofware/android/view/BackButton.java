@@ -28,8 +28,8 @@ public class BackButton extends AppCompatImageButton {
         super.setBackgroundColor(0x00);
 
         //TODO to fix (tickets settings)
-        super.setRotation(90);
-        super.setX(width - params.width);
+//        super.setRotation(90);
+//        super.setX(width - params.width);
 
         super.setOnClickListener(new OnClickListener() {
             @Override

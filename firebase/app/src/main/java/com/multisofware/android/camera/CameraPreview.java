@@ -7,7 +7,6 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -15,7 +14,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     private SurfaceHolder mHolder;
     private Camera mCamera;
-
 
 
     public CameraPreview(Context context, Camera camera) {
@@ -44,7 +42,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Camera.Size resolveCameraSize(Camera.Parameters params) {
         Camera.Size previewSize = params.getPreviewSize();
         Log.d(TAG, "resolveCameraSize - previewSize: " + previewSize.width + ", " + previewSize.height);
-        float previewRatio = ((float) previewSize.width) / ((float)previewSize.height);
+        float previewRatio = ((float) previewSize.width) / ((float) previewSize.height);
 //        float closerWidth = 0;
         float closerDiff = Integer.MAX_VALUE;
         float currentDiff = 0;
@@ -67,7 +65,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 //        closerDiff = Integer.MAX_VALUE;
 //        for (Camera.Size size : validSizes) {
         for (Camera.Size size : params.getSupportedPictureSizes()) {
-            float currentRatio = ((float) size.width) / ((float)size.height);
+            float currentRatio = ((float) size.width) / ((float) size.height);
             currentDiff = Math.abs(currentRatio - previewRatio);
             Log.d(TAG, "resolveCameraSize - getSupportedPictureSizes: " + size.width + ", " + size.height + ", " + currentRatio + ", " + currentDiff);
             if (currentDiff < closerDiff) {
@@ -98,9 +96,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             //TODO to review
             Camera.Size camSize = resolveCameraSize(params);
             params.setPictureSize(camSize.width, camSize.height);
-            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO); //FOCUS_MODE_CONTINUOUS_PICTURE
             params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             mCamera.setParameters(params);
+
         } catch (Exception e) {
             Log.e(TAG, "surfaceChanged error: " + e.getMessage(), e);
         }
@@ -114,4 +113,20 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
 
     }
+
+
+    public void autoFocus(final IAutoFocusCallback callback) {
+        try {
+            mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                @Override
+                public void onAutoFocus(boolean success, Camera camera) {
+                    new AutoFocusCallback(callback).onPostExecute(success);
+                }
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "autoFocus error: " + e.getMessage(), e);
+        }
+    }
+
+
 }
