@@ -1,11 +1,16 @@
 package com.multisofware.android.aws;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -20,7 +25,11 @@ import com.multisofware.android.aws.camera.CameraPreview;
 import com.multisofware.android.aws.camera.IAutoFocusCallback;
 import com.multisofware.android.aws.view.BackButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class CameraActivity extends AppCompatActivity {
@@ -129,8 +138,9 @@ public class CameraActivity extends AppCompatActivity {
         android.hardware.Camera camera = null;
         try {
             // regular back camera
-            camera = android.hardware.Camera.open();
-            //camera = openFrontFacingCamera();
+            //camera = android.hardware.Camera.open();
+
+            camera = openFrontFacingCamera();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
         }
@@ -195,28 +205,83 @@ public class CameraActivity extends AppCompatActivity {
 
     private void processData(byte[] data) {
         try {
-            //TODO to implement
-            Log.d(TAG, "processData!!!!!! - data.length:" + data.length);
+
+            Log.d(TAG, "processData - data.length:" + data.length);
+
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(data, 0, data.length, options);
+            final int originalW = options.outWidth;
+            final int originalH = options.outHeight;
+            float scale = (float) MainActivity.MAX_SIZE / (float) originalH;
+            options.inScaled = true;
+            options.inSampleSize = MainActivity.resolveSampleSize(options, (int) (originalW * scale), MainActivity.MAX_SIZE);
+            options.inMutable = false;
+            options.inJustDecodeBounds = false;
+
+            createImageFile(BitmapFactory.decodeByteArray(data, 0, data.length, options));
+
+
+            takePictureLock = false;
 
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
     }
 
+    private void createImageFile(Bitmap original) throws IOException {
 
-    private void createImageFile(String ticketNumber, Bitmap original) throws IOException {
+        final int QUALITY = 60;
 
-        Log.d(TAG, "createImageFile - Bitmap original - " + original.getWidth() + ", " + original.getHeight());
-
-        // Save image to gallery
-        String savedImageURL = MediaStore.Images.Media.insertImage(
-                getContentResolver(),
-                original,
-                "temp",
-                "temp"
+        @SuppressLint("SimpleDateFormat")
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File dir = new File(storageDir + "/tmp");
+        if (!dir.exists()) dir.mkdir();
+        File image = File.createTempFile(
+                imageFileName,
+                ".jpg",
+                dir
         );
 
+        File file = new File(image.getAbsolutePath());
+        FileOutputStream fOut;
+        try {
+            fOut = new FileOutputStream(file);
+            original.compress(Bitmap.CompressFormat.JPEG, QUALITY, fOut);
+            fOut.flush();
+            fOut.close();
+
+            original.recycle();
+
+            Log.d(TAG, "createImageFile success - file: " + file.getAbsolutePath());
+
+            Intent returnIntent = new Intent();
+            returnIntent.putExtra("cameraData", Uri.fromFile(file).toString());
+            setResult(Activity.RESULT_OK, returnIntent);
+            finish();
+
+        } catch (Exception e) {
+            Log.e(TAG, "createImageFile error: " + e.getMessage(), e);
+        }
+
+
     }
+
+
+//    private void createImageFile(String ticketNumber, Bitmap original) throws IOException {
+//
+//        Log.d(TAG, "createImageFile - Bitmap original - " + original.getWidth() + ", " + original.getHeight());
+//
+//        // Save image to gallery
+//        String savedImageURL = MediaStore.Images.Media.insertImage(
+//                getContentResolver(),
+//                original,
+//                "temp",
+//                "temp"
+//        );
+//    }
 
 
 }

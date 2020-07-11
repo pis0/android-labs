@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AWS</string>
+    <string name="AWSAccessKeyId">AKIAIPMQA5JKUG37UOSA</string>
+    <string name="AWSSecretKey">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</string>
 </resources>
