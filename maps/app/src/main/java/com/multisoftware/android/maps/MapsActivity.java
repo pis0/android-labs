@@ -7,10 +7,13 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.location.Address;
 import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
@@ -169,13 +172,25 @@ public class MapsActivity extends FragmentActivity
         Canvas canvas = new Canvas(bmp);
 
         Paint color = new Paint();
-        color.setTextSize(100);
         color.setFakeBoldText(true);
         color.setTextAlign(Paint.Align.CENTER);
-        color.setColor(0xff777777);
+        color.setColor(0xffffffff);
 
-        canvas.drawBitmap(icon, 0, 0, color);
-        canvas.drawText(String.valueOf(order), canvas.getWidth() >> 1, (canvas.getHeight() >> 1) - 5, color);
+
+        int MY_DIP_VALUE = 14; //5dp
+        color.setTextSize(TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                MY_DIP_VALUE,
+                getResources().getDisplayMetrics()
+        ));
+
+
+        Paint iconColor = new Paint();
+        iconColor.setColorFilter(new PorterDuffColorFilter(0xffd45b5b, PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(icon, 0, 0, iconColor);
+        //canvas.drawBitmap(icon, 0, 0, color);
+
+        canvas.drawText(String.valueOf(order), canvas.getWidth() >> 1, (canvas.getHeight() >> 1), color);
 
         return bmp;
     }
