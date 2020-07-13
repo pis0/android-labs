@@ -134,7 +134,8 @@ public class MapsActivity extends FragmentActivity
 //        BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.mipmap.ic_base_marker);
         //BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
 
-        address = getLocationFromAddress(this, "Rua José de Alencar, 94, chapecó sc");
+        //address = getLocationFromAddress(this, "Rua José de Alencar, 94, chapecó sc");
+        LatLng address = new LatLng(-27.0890975,-52.6243636);
         Marker marker = mMap.addMarker(
                 new MarkerOptions()
                         .position(address)
@@ -175,8 +176,6 @@ public class MapsActivity extends FragmentActivity
         color.setFakeBoldText(true);
         color.setTextAlign(Paint.Align.CENTER);
         color.setColor(0xffffffff);
-
-
         int MY_DIP_VALUE = 14; //5dp
         color.setTextSize(TypedValue.applyDimension(
                 TypedValue.COMPLEX_UNIT_DIP,
@@ -187,9 +186,8 @@ public class MapsActivity extends FragmentActivity
 
         Paint iconColor = new Paint();
         iconColor.setColorFilter(new PorterDuffColorFilter(0xffd45b5b, PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(icon, 0, 0, iconColor);
-        //canvas.drawBitmap(icon, 0, 0, color);
 
+        canvas.drawBitmap(icon, 0, 0, iconColor);
         canvas.drawText(String.valueOf(order), canvas.getWidth() >> 1, (canvas.getHeight() >> 1), color);
 
         return bmp;
