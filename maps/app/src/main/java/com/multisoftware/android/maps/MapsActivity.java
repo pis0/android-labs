@@ -169,7 +169,7 @@ public class MapsActivity extends FragmentActivity
         Canvas canvas = new Canvas(bmp);
 
         Paint color = new Paint();
-        color.setTextSize(50);
+        color.setTextSize(100);
         color.setFakeBoldText(true);
         color.setTextAlign(Paint.Align.CENTER);
         color.setColor(0xff777777);
