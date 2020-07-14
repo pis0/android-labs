@@ -3,15 +3,18 @@ package com.multisofware.android.view;
 import android.app.Activity;
 import android.content.Context;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 
 import androidx.appcompat.widget.AppCompatImageButton;
 
+import com.multisofware.android.firebase.FirebaseTest;
 import com.multisofware.android.firebase.R;
 
 public class BackButton extends AppCompatImageButton {
 
+    private static final String TAG = BackButton.class.getSimpleName();
 
     public BackButton(final Context context) {
         super(context);
@@ -34,6 +37,9 @@ public class BackButton extends AppCompatImageButton {
         super.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                Log.d(TAG, "setOnClickListener");
+
                 ((Activity) context).finish();
             }
         });

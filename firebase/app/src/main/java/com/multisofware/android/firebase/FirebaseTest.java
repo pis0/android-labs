@@ -6,12 +6,10 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -31,24 +29,33 @@ import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcode;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
+import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
 import com.google.firebase.ml.vision.common.FirebaseVisionPoint;
 import com.google.firebase.ml.vision.face.FirebaseVisionFace;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceContour;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
 import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
-import com.multisofware.android.camera.CameraPreview;
-import com.multisofware.android.camera.IAutoFocusCallback;
 import com.multisofware.android.view.BackButton;
+import com.multisofware.android.view.Output;
 import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
 import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
 import com.multisofware.android.view.tickets.TicketsMask;
+import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.controls.Audio;
+import com.otaliastudios.cameraview.controls.Engine;
+import com.otaliastudios.cameraview.controls.Facing;
+import com.otaliastudios.cameraview.controls.Flash;
+import com.otaliastudios.cameraview.frame.Frame;
+import com.otaliastudios.cameraview.frame.FrameProcessor;
+import com.otaliastudios.cameraview.size.Size;
+import com.otaliastudios.cameraview.size.SizeSelector;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -179,19 +186,42 @@ public class FirebaseTest extends AppCompatActivity {
         android.hardware.Camera camera = null;
         try {
             // regular back camera
-            camera = android.hardware.Camera.open();
-            //camera = openFrontFacingCamera();
+//            camera = android.hardware.Camera.open();
+            camera = openFrontFacingCamera();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage(), e);
         }
         return camera;
     }
 
-    private android.hardware.Camera camera;
-    private CameraPreview preview;
+    //    private android.hardware.Camera camera;
+    //private CameraPreview preview;
+    private CameraView cameraView;
     private FrameLayout FLPreview;
 
     private Boolean takePictureLock = false;
+
+    private FirebaseVisionImage getVisionImageFromFrame(Frame frame) {
+        FirebaseVisionImageMetadata imageMetaData = new FirebaseVisionImageMetadata.Builder()
+                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
+                .setRotation(FirebaseVisionImageMetadata.ROTATION_270)
+                .setHeight(frame.getSize().getHeight())
+                .setWidth(frame.getSize().getWidth())
+                .build();
+
+        byte[] frameBytes = frame.getData();
+
+        return FirebaseVisionImage.fromByteArray(frameBytes, imageMetaData);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        cameraView.clearFrameProcessors();
+        cameraView.destroy();
+
+    }
 
     private void initCamera() {
 
@@ -200,46 +230,197 @@ public class FirebaseTest extends AppCompatActivity {
             return;
         }
 
-        camera = getCameraInstance();
+//        camera = getCameraInstance();
 
-        preview = new CameraPreview(this, camera);
         FLPreview = (FrameLayout) findViewById(R.id.camera_preview);
 
+        //preview = new CameraPreview(this, camera);
+        cameraView = new CameraView(this);
+        cameraView.setLifecycleOwner(this);
 
-        FLPreview.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                if (FLPreview == v && !takePictureLock) {
+        cameraView.setEngine(Engine.CAMERA2);
+        cameraView.setFacing(Facing.FRONT);
+        cameraView.setAudio(Audio.OFF);
+        cameraView.setFlash(Flash.OFF);
+        cameraView.setPreviewStreamSize(new SizeSelector() {
+            @NonNull
+            @Override
+            public List<Size> select(@NonNull List<Size> source) {
 
-                    //TODO to review
-                    preview.autoFocus(new IAutoFocusCallback() {
-                        @Override
-                        public void run(Boolean success) {
-                            if(success) {
-                                showToast("I am clicked");
-                                camera.takePicture(null, null, pictureCallback);
-                                takePictureLock = true;
-                            }
-                        }
-                    });
-
+                for (Size size : source) {
+                    Log.d(TAG, "getSupportedPictureSizes: " + size.getWidth() + ", " + size.getHeight());
                 }
+
+                List<Size> list = new ArrayList<>(1);
+                Size size = new Size(480, 640);
+                list.add(size);
+
+                return list;
             }
         });
 
-        FLPreview.addView(preview);
+        FLPreview.addView(cameraView);
+
+
+        final Output output = new Output(this);
+        FLPreview.addView(output);
+
+
+        FirebaseVisionFaceDetectorOptions realTimeOpts =
+                new FirebaseVisionFaceDetectorOptions.Builder()
+                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
+//                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
+//                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
+                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+                        .enableTracking()
+                        .build();
+
+        final FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance()
+                .getVisionFaceDetector(realTimeOpts);
+
+        cameraView.addFrameProcessor(new FrameProcessor() {
+
+            private boolean lock = false;
+            private int prevTrakingId = -1;
+            private int blinkCounter = 0;
+            private int notBlinkCounter = 0;
+
+            @Override
+            public void process(@NonNull final Frame frame) {
+
+                if (lock) return;
+                lock = true;
+
+                final FirebaseVisionImage image = getVisionImageFromFrame(frame);
+
+                faceDetector.detectInImage(image).addOnSuccessListener(
+                        new OnSuccessListener<List<FirebaseVisionFace>>() {
+                            @Override
+                            public void onSuccess(List<FirebaseVisionFace> faces) {
+                                //Log.d(TAG, "faceDetector success. - faces.length:" + faces.size());
+
+                                String result = "";
+                                result += "faces: " + faces.size() + ", " + cameraView.getRotation();
+
+//                                if (faces.size() == 0) {
+//                                    blinkCounter = 0;
+//                                    notBlinkCounter = 0;
+//                                }
+
+                                for (FirebaseVisionFace face : faces) {
+
+                                    Rect bounds = face.getBoundingBox();
+                                    result += "\nbounds: " + bounds.toShortString();
+
+                                    float rotY = face.getHeadEulerAngleY();
+                                    float rotZ = face.getHeadEulerAngleZ();
+                                    result += "\nrotY: " + rotY + ", rotZ: " + rotZ;
+
+                                    FirebaseVisionFaceLandmark leftEye = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE);
+                                    FirebaseVisionFaceLandmark rightEye = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE);
+                                    if (leftEye != null && rightEye != null) {
+                                        FirebaseVisionPoint leftEyePos = leftEye.getPosition();
+                                        FirebaseVisionPoint rightEyePos = rightEye.getPosition();
+                                        result += "\nleftEyePos: " + leftEyePos.toString() + ", rightEyePos: " + rightEyePos.toString();
+                                    }
+
+                                    result += "\nsmileProb: " + face.getSmilingProbability();
+
+                                    if (face.getLeftEyeOpenProbability() < 0.4 && face.getRightEyeOpenProbability() < 0.4) {
+                                        result += "\nblinking - " + blinkCounter++;
+                                        notBlinkCounter = 0;
+                                    } else {
+                                        result += "\nnot blinking" + notBlinkCounter++;
+                                    }
+
+
+                                    if (face.getTrackingId() != FirebaseVisionFace.INVALID_ID) {
+                                        int id = face.getTrackingId();
+                                        result += "\ntrackingId: " + id;
+                                        if (prevTrakingId != id) {
+                                            prevTrakingId = id;
+                                            blinkCounter = 0;
+                                            notBlinkCounter = 0;
+                                        }
+                                    }
+                                }
+
+
+                                if (blinkCounter >= 1 && notBlinkCounter >= 1) {
+                                    Bitmap bmp = image.getBitmap();
+                                    output.setText("take picture! " + bmp);
+
+                                    try {
+                                        faceDetector.close();
+                                        cameraView.clearFrameProcessors();
+
+                                        createImageFile("", bmp);
+
+                                    } catch (IOException ignored) {
+                                    }
+
+
+                                } else {
+                                    output.setText(result);
+                                    lock = false;
+                                }
+
+
+                            }
+                        })
+                        .addOnFailureListener(
+                                new OnFailureListener() {
+                                    @Override
+                                    public void onFailure(@NonNull Exception e) {
+                                        Log.e(TAG, "  failed - error:" + e.getMessage(), e);
+
+//                                        try {
+//                                            faceDetector.close();
+                                        lock = false;
+//                                        } catch (IOException ignored) {
+//                                        }
+                                    }
+                                });
+
+            }
+        });
+
+
+        //preview = findViewById(R.id.cameraView);
+        //preview.setLifecycleOwner(this);
+
+//        FLPreview.setOnClickListener(new View.OnClickListener() {
+//            public void onClick(View v) {
+//                if (FLPreview == v && !takePictureLock) {
+//
+//                    //TODO to review
+////                    preview.autoFocus(new IAutoFocusCallback() {
+////                        @Override
+////                        public void run(Boolean success) {
+////                            if(success) {
+//                    showToast("I am clicked");
+//                    camera.takePicture(null, null, pictureCallback);
+//                    takePictureLock = true;
+////                            }
+////                        }
+////                    });
+//
+//                }
+//            }
+//        });
 
 
         //TODO to review
-//        ticketsMask = new TicketsMask(this);
-//        FLPreview.addView(ticketsMask);
-//        ticketsLabel = new TicketsLabel(this);
-//        FLPreview.addView(ticketsLabel);
-//        ticketsCounter = new TicketsCounter(this);
-//        FLPreview.addView(ticketsCounter);
-        qrCodeMask = new QRCodeMask(this);
-        FLPreview.addView(qrCodeMask);
-        qrCodeLabel = new QRCodeLabel(this);
-        FLPreview.addView(qrCodeLabel);
+////        ticketsMask = new TicketsMask(this);
+////        FLPreview.addView(ticketsMask);
+////        ticketsLabel = new TicketsLabel(this);
+////        FLPreview.addView(ticketsLabel);
+////        ticketsCounter = new TicketsCounter(this);
+////        FLPreview.addView(ticketsCounter);
+//        qrCodeMask = new QRCodeMask(this);
+//        FLPreview.addView(qrCodeMask);
+//        qrCodeLabel = new QRCodeLabel(this);
+//        FLPreview.addView(qrCodeLabel);
 
         //
         backButton = new BackButton(this);
@@ -257,7 +438,7 @@ public class FirebaseTest extends AppCompatActivity {
             showToast("onPictureTaken");
             Log.d(TAG, "onPictureTaken - data:" + data);
 
-            processData(data);
+//            processData(data);
             camera.startPreview();
 
         }
@@ -267,8 +448,7 @@ public class FirebaseTest extends AppCompatActivity {
     private void processData(byte[] data) {
         try {
 //            barCodeDetector(480, data);
-            textDetector(2048, data);
-//            faceDetector(640, data);
+//            textDetector(2048, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
@@ -359,374 +539,6 @@ public class FirebaseTest extends AppCompatActivity {
 //        return firebaseVisionImage;
 
 
-    }
-
-    private void faceDetector(int maxSize, byte[] data) {
-
-        Log.d(TAG, "faceDetector");
-
-        FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
-
-        if (firebaseVisionImage == null) {
-            Log.d(TAG, "faceDetector error: firebaseVisionImage is null");
-            takePictureLock = false;
-            return;
-        }
-
-        // High-accuracy landmark detection and face classification
-//        FirebaseVisionFaceDetectorOptions highAccuracyOpts =
-//                new FirebaseVisionFaceDetectorOptions.Builder()
-//                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
-//                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
-//                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-//                        .build();
-
-        // Real-time contour detection of multiple faces
-        FirebaseVisionFaceDetectorOptions realTimeOpts =
-                new FirebaseVisionFaceDetectorOptions.Builder()
-                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
-                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
-                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
-                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-                        .enableTracking()
-                        .build();
-
-
-        FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance()
-                .getVisionFaceDetector(realTimeOpts);
-
-
-        Log.d(TAG, "faceDetector - getting results...");
-
-        Task<List<FirebaseVisionFace>> result = faceDetector.detectInImage(firebaseVisionImage)
-                .addOnSuccessListener(
-                        new OnSuccessListener<List<FirebaseVisionFace>>() {
-                            @Override
-                            public void onSuccess(List<FirebaseVisionFace> faces) {
-                                Log.d(TAG, "faceDetector success. - faces.length:" + faces.size());
-                                extractFaceInfo(faces);
-                                takePictureLock = false;
-                            }
-                        })
-                .addOnFailureListener(
-                        new OnFailureListener() {
-                            @Override
-                            public void onFailure(@NonNull Exception e) {
-                                Log.e(TAG, "faceDetector failed - error:" + e.getMessage(), e);
-                                takePictureLock = false;
-                            }
-                        });
-
-
-    }
-
-
-    private List<FirebaseVisionPoint> faceContour;
-    private List<FirebaseVisionPoint> leftEyeContour;
-    private List<FirebaseVisionPoint> rightEyeContour;
-    private List<FirebaseVisionPoint> leftEyeBrowTopContour;
-    private List<FirebaseVisionPoint> leftEyeBrowBottomContour;
-    private List<FirebaseVisionPoint> rightEyeBrowTopContour;
-    private List<FirebaseVisionPoint> rightEyeBrowBottomContour;
-    private List<FirebaseVisionPoint> noseBridgeContour;
-    private List<FirebaseVisionPoint> noseBottomContour;
-    //    private FirebaseVisionFaceLandmark leftEar;
-//    private FirebaseVisionFaceLandmark rightEar;
-    private FirebaseVisionFaceLandmark leftCheek;
-    private FirebaseVisionFaceLandmark rightCheek;
-    private FirebaseVisionFaceLandmark leftEye;
-    private FirebaseVisionFaceLandmark rightEye;
-    private FirebaseVisionFaceLandmark noseBase;
-    private FirebaseVisionFaceLandmark mouthLeft;
-    private FirebaseVisionFaceLandmark mouthRight;
-    private FirebaseVisionFaceLandmark mouthBottom;
-
-    private Rect boundingBox;
-
-    private float rY;
-    private float rZ;
-
-    private PointF getListDiff(List<FirebaseVisionPoint> list1, List<FirebaseVisionPoint> list2, PointF boundingBoxDiff) {
-        int len = Math.min(list1.size(), list2.size());
-        FirebaseVisionPoint p1;
-        FirebaseVisionPoint p2;
-        float pXDiff = 0;
-        float pYDiff = 0;
-        float finalXDiff = 0;
-        float finalYDiff = 0;
-        for (int i = 0; i < len; i++) {
-            p1 = list1.get(i);
-            p2 = list2.get(i);
-            pXDiff = (p1.getX() - Math.abs(p1.getX() - p2.getX())) / p1.getX();
-            pYDiff = (p1.getY() - Math.abs(p1.getY() - p2.getY())) / p1.getY();
-            //Log.d(TAG, "compare: p1(" + p1.getX() + ", " + p1.getY() + ") - p2(" + p2.getX() + ", " + p2.getY() + ") - diff(" + pXDiff + ", " + pYDiff + ")");
-            finalXDiff += pXDiff;
-            finalYDiff += pYDiff;
-        }
-        PointF result = new PointF(
-                Math.abs(((finalXDiff / len) * boundingBoxDiff.x) - boundingBoxDiff.x),
-                Math.abs(((finalYDiff / len) * boundingBoxDiff.y) - boundingBoxDiff.y)
-        );
-        // Log.d(TAG, "compare - diff(" + result.x + ", " + result.y + ")");
-        return result;
-    }
-
-    private PointF getDiff(FirebaseVisionPoint p1, FirebaseVisionPoint p2, PointF boundingBoxDiff) {
-        float pXDiff = 0;
-        float pYDiff = 0;
-        pXDiff = (p1.getX() - Math.abs(p1.getX() - p2.getX())) / p1.getX();
-        pYDiff = (p1.getY() - Math.abs(p1.getY() - p2.getY())) / p1.getY();
-        PointF result = new PointF(
-                Math.abs((pXDiff * boundingBoxDiff.x) - boundingBoxDiff.x),
-                Math.abs((pYDiff * boundingBoxDiff.y) - boundingBoxDiff.y)
-        );
-        return result;
-    }
-
-    private boolean extractFaceInfoFlag = false;
-
-    private void extractFaceInfo(List<FirebaseVisionFace> faces) {
-
-        for (FirebaseVisionFace face : faces) {
-
-            float currentRY = face.getHeadEulerAngleY();
-            float currentRZ = face.getHeadEulerAngleZ();
-
-            Rect currentBoundingBox = face.getBoundingBox();
-
-            List<FirebaseVisionPoint> currentFaceContour = face.getContour(FirebaseVisionFaceContour.FACE).getPoints();
-            List<FirebaseVisionPoint> currentLeftEyeContour = face.getContour(FirebaseVisionFaceContour.LEFT_EYE).getPoints();
-            List<FirebaseVisionPoint> currentRightEyeContour = face.getContour(FirebaseVisionFaceContour.RIGHT_EYE).getPoints();
-            List<FirebaseVisionPoint> currentLeftEyeBrowTopContour = face.getContour(FirebaseVisionFaceContour.LEFT_EYEBROW_TOP).getPoints();
-            List<FirebaseVisionPoint> currentLeftEyeBrowBottomContour = face.getContour(FirebaseVisionFaceContour.LEFT_EYEBROW_BOTTOM).getPoints();
-            List<FirebaseVisionPoint> currentRightEyeBrowTopContour = face.getContour(FirebaseVisionFaceContour.RIGHT_EYEBROW_TOP).getPoints();
-            List<FirebaseVisionPoint> currentRightEyeBrowBottomContour = face.getContour(FirebaseVisionFaceContour.RIGHT_EYEBROW_BOTTOM).getPoints();
-            List<FirebaseVisionPoint> currentNoseBridgeContour = face.getContour(FirebaseVisionFaceContour.NOSE_BRIDGE).getPoints();
-            List<FirebaseVisionPoint> currentNoseBottomContour = face.getContour(FirebaseVisionFaceContour.NOSE_BOTTOM).getPoints();
-
-//            FirebaseVisionFaceLandmark currentLeftEar = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EAR);
-//            FirebaseVisionFaceLandmark currentRightEar = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EAR);
-            FirebaseVisionFaceLandmark currentLeftCheek = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_CHEEK);
-            FirebaseVisionFaceLandmark currentRightCheek = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_CHEEK);
-            FirebaseVisionFaceLandmark currentLeftEye = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE);
-            FirebaseVisionFaceLandmark currentRightEye = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE);
-            FirebaseVisionFaceLandmark currentNosebase = face.getLandmark(FirebaseVisionFaceLandmark.NOSE_BASE);
-            FirebaseVisionFaceLandmark currentMouthLeft = face.getLandmark(FirebaseVisionFaceLandmark.MOUTH_LEFT);
-            FirebaseVisionFaceLandmark currentMouthRight = face.getLandmark(FirebaseVisionFaceLandmark.MOUTH_RIGHT);
-            FirebaseVisionFaceLandmark currentMouthBottom = face.getLandmark(FirebaseVisionFaceLandmark.MOUTH_BOTTOM);
-
-            // contour
-            if (faceContour == null)
-                faceContour = currentFaceContour;
-            if (leftEyeContour == null)
-                leftEyeContour = currentLeftEyeContour;
-            if (rightEyeContour == null)
-                rightEyeContour = currentRightEyeContour;
-            if (leftEyeBrowTopContour == null)
-                leftEyeBrowTopContour = currentLeftEyeBrowTopContour;
-            if (leftEyeBrowBottomContour == null)
-                leftEyeBrowBottomContour = currentLeftEyeBrowBottomContour;
-            if (rightEyeBrowTopContour == null)
-                rightEyeBrowTopContour = currentRightEyeBrowTopContour;
-            if (rightEyeBrowBottomContour == null)
-                rightEyeBrowBottomContour = currentRightEyeBrowBottomContour;
-            if (noseBridgeContour == null)
-                noseBridgeContour = currentNoseBridgeContour;
-            if (noseBottomContour == null)
-                noseBottomContour = currentNoseBottomContour;
-
-            // landmark
-//            if (leftEar == null)
-//                leftEar = currentLeftEar;
-//            if (rightEar == null)
-//                rightEar = currentRightEar;
-            if (leftCheek == null)
-                leftCheek = currentLeftCheek;
-            if (rightCheek == null)
-                rightCheek = currentRightCheek;
-            if (leftEye == null)
-                leftEye = currentLeftEye;
-            if (rightEye == null)
-                rightEye = currentRightEye;
-            if (noseBase == null)
-                noseBase = currentNosebase;
-            if (mouthLeft == null)
-                mouthLeft = currentMouthLeft;
-            if (mouthRight == null)
-                mouthRight = currentMouthRight;
-            if (mouthBottom == null)
-                mouthBottom = currentMouthBottom;
-
-
-            // boundingBox
-            if (boundingBox == null)
-                boundingBox = currentBoundingBox;
-
-            // rotation
-            if (rY == 0) rY = currentRY;
-            if (rZ == 0) rZ = currentRZ;
-
-            Log.d(TAG, "currentRY " + currentRY);
-            Log.d(TAG, "currentRZ " + currentRZ);
-            float rYDiff = ((rY - Math.abs(rY - currentRY)) / rY) / 360;
-            float rZDiff = ((rZ - Math.abs(rZ - currentRZ)) / rZ) / 360;
-            Log.d(TAG, "rotation compare. " + rYDiff + ", " + rZDiff);
-
-            float bw = boundingBox.width();
-            float bh = boundingBox.height();
-            float cbw = currentBoundingBox.width();
-            float cbh = currentBoundingBox.height();
-            PointF boundingBoxDiff = new PointF(
-                    ((float) (bw - Math.abs(bw - cbw)) / bw) + rYDiff,
-                    ((float) (bh - Math.abs(bh - cbh)) / bh) + rZDiff
-            );
-            Log.d(TAG, "boundingBox compare. " + boundingBoxDiff);
-
-
-            PointF faceContourDiff;
-            faceContourDiff = getListDiff(faceContour, currentFaceContour, boundingBoxDiff);
-            Log.d(TAG, "faceContour compare. " + faceContourDiff);
-
-            PointF leftEyeContourDiff;
-            leftEyeContourDiff = getListDiff(leftEyeContour, currentLeftEyeContour, boundingBoxDiff);
-            Log.d(TAG, "leftEyeContour compare. " + leftEyeContourDiff);
-
-            PointF rightEyeContourDiff;
-            rightEyeContourDiff = getListDiff(rightEyeContour, currentRightEyeContour, boundingBoxDiff);
-            Log.d(TAG, "rightEyeContour compare. " + rightEyeContourDiff);
-
-            PointF leftEyeBrowTopContourDiff;
-            leftEyeBrowTopContourDiff = getListDiff(leftEyeBrowTopContour, currentLeftEyeBrowTopContour, boundingBoxDiff);
-            Log.d(TAG, "leftEyeBrowTopContour compare. " + leftEyeBrowTopContourDiff);
-
-            PointF leftEyeBrowBottomContourDiff;
-            leftEyeBrowBottomContourDiff = getListDiff(leftEyeBrowBottomContour, currentLeftEyeBrowBottomContour, boundingBoxDiff);
-            Log.d(TAG, "leftEyeBrowBottomContour compare. " + leftEyeBrowBottomContourDiff);
-
-            PointF rightEyeBrowTopContourDiff;
-            rightEyeBrowTopContourDiff = getListDiff(rightEyeBrowTopContour, currentRightEyeBrowTopContour, boundingBoxDiff);
-            Log.d(TAG, "rightEyeBrowTopContour compare. " + rightEyeBrowTopContourDiff);
-
-            PointF rightEyeBrowBottomContourDiff;
-            rightEyeBrowBottomContourDiff = getListDiff(rightEyeBrowBottomContour, currentRightEyeBrowBottomContour, boundingBoxDiff);
-            Log.d(TAG, "rightEyeBrowBottomContour compare. " + rightEyeBrowBottomContourDiff);
-
-            PointF noseBridgeContourDiff;
-            noseBridgeContourDiff = getListDiff(noseBridgeContour, currentNoseBridgeContour, boundingBoxDiff);
-            Log.d(TAG, "noseBridgeContour compare. " + noseBridgeContourDiff);
-
-            PointF noseBottomContourDiff;
-            noseBottomContourDiff = getListDiff(noseBottomContour, currentNoseBottomContour, boundingBoxDiff);
-            Log.d(TAG, "noseBottomContour compare. " + noseBottomContourDiff);
-
-//            PointF leftEarDiff;
-//            if (leftEar != null && currentLeftEar != null) {
-//                leftEarDiff = getDiff(leftEar.getPosition(), currentLeftEar.getPosition(), boundingBoxDiff);
-//                Log.d(TAG, "leftEarDiff compare. " + leftEarDiff);
-//            }
-//
-//            PointF rightEarDiff;
-//            if (rightEar != null && currentRightEar != null) {
-//                rightEarDiff = getDiff(rightEar.getPosition(), currentRightEar.getPosition(), boundingBoxDiff);
-//                Log.d(TAG, "rightEar compare. " + rightEarDiff);
-//            }
-
-            PointF leftCheekDiff = null;
-            if (leftCheek != null && currentLeftCheek != null) {
-                leftCheekDiff = getDiff(leftCheek.getPosition(), currentLeftCheek.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "leftCheek compare. " + leftCheekDiff);
-            }
-
-            PointF rightCheekDiff = null;
-            if (rightCheek != null && currentRightCheek != null) {
-                rightCheekDiff = getDiff(rightCheek.getPosition(), currentRightCheek.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "rightCheek compare. " + rightCheekDiff);
-            }
-
-            PointF leftEyeDiff = null;
-            if (leftEye != null && currentLeftEye != null) {
-                leftEyeDiff = getDiff(leftEye.getPosition(), currentLeftEye.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "leftEye compare. " + leftEyeDiff);
-            }
-
-            PointF rightEyeDiff = null;
-            if (rightEye != null && currentRightEye != null) {
-                rightEyeDiff = getDiff(rightEye.getPosition(), currentRightEye.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "rightEye compare. " + rightEyeDiff);
-            }
-
-            PointF noseBaseDiff = null;
-            if (noseBase != null && currentNosebase != null) {
-                noseBaseDiff = getDiff(noseBase.getPosition(), currentNosebase.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "noseBase compare. " + noseBaseDiff);
-            }
-
-            PointF mouthLeftDiff = null;
-            if (mouthLeft != null && currentMouthLeft != null) {
-                mouthLeftDiff = getDiff(mouthLeft.getPosition(), currentMouthLeft.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "mouthLeft compare. " + mouthLeftDiff);
-            }
-
-            PointF mouthRightDiff = null;
-            if (mouthRight != null && currentMouthRight != null) {
-                mouthRightDiff = getDiff(mouthRight.getPosition(), currentMouthRight.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "mouthRight compare. " + mouthRightDiff);
-            }
-
-            PointF mouthBottomDiff = null;
-            if (mouthBottom != null && currentMouthBottom != null) {
-                mouthBottomDiff = getDiff(mouthBottom.getPosition(), currentMouthBottom.getPosition(), boundingBoxDiff);
-                Log.d(TAG, "mouthBottom compare. " + mouthBottomDiff);
-            }
-
-
-            PointF[] temp = new PointF[]{
-                    faceContourDiff,
-                    leftEyeContourDiff,
-                    rightEyeContourDiff,
-                    leftEyeBrowTopContourDiff,
-                    leftEyeBrowBottomContourDiff,
-                    rightEyeBrowTopContourDiff,
-                    rightEyeBrowBottomContourDiff,
-                    noseBridgeContourDiff,
-                    noseBottomContourDiff,
-//                    leftEarDiff,
-//                    rightEarDiff,
-                    leftCheekDiff,
-                    rightCheekDiff,
-                    leftEyeDiff,
-                    rightEyeDiff,
-                    noseBaseDiff,
-                    mouthLeftDiff,
-                    mouthRightDiff,
-                    mouthBottomDiff
-            };
-
-            int errorCount = 0;
-            float valueToCompare = 0.07f;
-            for (PointF pf : temp) {
-                if (pf.x >= valueToCompare) errorCount++;
-                if (pf.y >= valueToCompare) errorCount++;
-            }
-
-//            if (errorCount >= 2) {
-//            Toast.makeText(getApplicationContext(), "errorCount: " + errorCount, Toast.LENGTH_SHORT).show();
-            showToast("errorCount: " + errorCount);
-//            } else if(extractFaceInfoFlag) {
-//                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-//                alertDialogBuilder.setMessage("RECONHECEU!");
-//                alertDialogBuilder.setPositiveButton("OK", new DialogInterface.OnClickListener()
-//                {
-//                    public void onClick(DialogInterface dialog, int whichButton)
-//                    {
-//                        finish();
-//                    }
-//                });
-//                alertDialogBuilder.create().show();
-//            }
-        }
-
-        extractFaceInfoFlag = true;
     }
 
 

@@ -96,7 +96,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             //TODO to review
             Camera.Size camSize = resolveCameraSize(params);
             params.setPictureSize(camSize.width, camSize.height);
-            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO); //FOCUS_MODE_CONTINUOUS_PICTURE
+//            params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+            params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
             params.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);
             mCamera.setParameters(params);
 
