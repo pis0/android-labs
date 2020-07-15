@@ -20,7 +20,7 @@ public class Output extends AppCompatTextView {
         int height = displayMetrics.heightPixels;
         int width = displayMetrics.widthPixels;
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, (int)(height * 0.3));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width, (int) (height * 0.3));
         super.setLayoutParams(params);
 
         super.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
@@ -30,8 +30,7 @@ public class Output extends AppCompatTextView {
         super.setPivotY(0);
 //        super.setPadding(20, 20, 20, 20);
         super.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
-        super.setY(height - (int)(height * 0.3));
-
+        super.setY(height - (int) (height * 0.3));
 
 
     }

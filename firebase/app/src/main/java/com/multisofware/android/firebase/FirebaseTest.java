@@ -1,6 +1,7 @@
 package com.multisofware.android.firebase;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -38,6 +39,7 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.view.BackButton;
+import com.multisofware.android.view.HitArea;
 import com.multisofware.android.view.Output;
 import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
@@ -232,12 +234,12 @@ public class FirebaseTest extends AppCompatActivity {
 
 //        camera = getCameraInstance();
 
-        FLPreview = (FrameLayout) findViewById(R.id.camera_preview);
+        FLPreview = findViewById(R.id.camera_preview);
+
 
         //preview = new CameraPreview(this, camera);
         cameraView = new CameraView(this);
         cameraView.setLifecycleOwner(this);
-
         cameraView.setEngine(Engine.CAMERA2);
         cameraView.setFacing(Facing.FRONT);
         cameraView.setAudio(Audio.OFF);
@@ -389,25 +391,15 @@ public class FirebaseTest extends AppCompatActivity {
         //preview = findViewById(R.id.cameraView);
         //preview.setLifecycleOwner(this);
 
-//        FLPreview.setOnClickListener(new View.OnClickListener() {
+//        HitArea hitArea = new HitArea(this);
+//        hitArea.setOnClickListener(new View.OnClickListener() {
+//            @Override
 //            public void onClick(View v) {
-//                if (FLPreview == v && !takePictureLock) {
-//
-//                    //TODO to review
-////                    preview.autoFocus(new IAutoFocusCallback() {
-////                        @Override
-////                        public void run(Boolean success) {
-////                            if(success) {
-//                    showToast("I am clicked");
-//                    camera.takePicture(null, null, pictureCallback);
-//                    takePictureLock = true;
-////                            }
-////                        }
-////                    });
-//
-//                }
+//                Log.d(TAG, "setOnClickListener: " + v);
 //            }
 //        });
+//        FLPreview.addView(hitArea);
+
 
 
         //TODO to review
