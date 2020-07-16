@@ -7,16 +7,25 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
+import android.graphics.PointF;
 import android.graphics.Rect;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.SparseIntArray;
+import android.view.Surface;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -39,13 +48,15 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.view.BackButton;
-import com.multisofware.android.view.HitArea;
 import com.multisofware.android.view.Output;
 import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
 import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
 import com.multisofware.android.view.tickets.TicketsMask;
+import com.otaliastudios.cameraview.CameraException;
+import com.otaliastudios.cameraview.CameraListener;
+import com.otaliastudios.cameraview.CameraOptions;
 import com.otaliastudios.cameraview.CameraView;
 import com.otaliastudios.cameraview.controls.Audio;
 import com.otaliastudios.cameraview.controls.Engine;
@@ -172,6 +183,7 @@ public class FirebaseTest extends AppCompatActivity {
         cameraCount = android.hardware.Camera.getNumberOfCameras();
         for (int camIdx = 0; camIdx < cameraCount; camIdx++) {
             android.hardware.Camera.getCameraInfo(camIdx, cameraInfo);
+
             if (cameraInfo.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
                 try {
                     cam = android.hardware.Camera.open(camIdx);
@@ -196,6 +208,23 @@ public class FirebaseTest extends AppCompatActivity {
         return camera;
     }
 
+
+    private int findFrontFacingCameraID() {
+        int cameraId = -1;
+        // Search for the front facing camera
+        int numberOfCameras = android.hardware.Camera.getNumberOfCameras();
+        for (int i = 0; i < numberOfCameras; i++) {
+            android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+            android.hardware.Camera.getCameraInfo(i, info);
+            if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                Log.d(TAG, "Camera found");
+                cameraId = i;
+                break;
+            }
+        }
+        return cameraId;
+    }
+
     //    private android.hardware.Camera camera;
     //private CameraPreview preview;
     private CameraView cameraView;
@@ -203,10 +232,10 @@ public class FirebaseTest extends AppCompatActivity {
 
     private Boolean takePictureLock = false;
 
-    private FirebaseVisionImage getVisionImageFromFrame(Frame frame) {
+    private FirebaseVisionImage getVisionImageFromFrame(Frame frame, int rotation) {
         FirebaseVisionImageMetadata imageMetaData = new FirebaseVisionImageMetadata.Builder()
                 .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
-                .setRotation(FirebaseVisionImageMetadata.ROTATION_270)
+                .setRotation(rotation)
                 .setHeight(frame.getSize().getHeight())
                 .setWidth(frame.getSize().getWidth())
                 .build();
@@ -236,7 +265,6 @@ public class FirebaseTest extends AppCompatActivity {
 
         FLPreview = findViewById(R.id.camera_preview);
 
-
         //preview = new CameraPreview(this, camera);
         cameraView = new CameraView(this);
         cameraView.setLifecycleOwner(this);
@@ -244,6 +272,7 @@ public class FirebaseTest extends AppCompatActivity {
         cameraView.setFacing(Facing.FRONT);
         cameraView.setAudio(Audio.OFF);
         cameraView.setFlash(Flash.OFF);
+        cameraView.setUseDeviceOrientation(true);
         cameraView.setPreviewStreamSize(new SizeSelector() {
             @NonNull
             @Override
@@ -254,14 +283,31 @@ public class FirebaseTest extends AppCompatActivity {
                 }
 
                 List<Size> list = new ArrayList<>(1);
-                Size size = new Size(480, 640);
+                Size size = new Size(288, 352);
                 list.add(size);
 
                 return list;
             }
         });
+        cameraView.addCameraListener(new CameraListener() {
+            @Override
+            public void onCameraOpened(@NonNull CameraOptions options) {
+                Log.d(TAG, "onCameraOpened: " + cameraView.getRotation() );
+            }
+        });
+
 
         FLPreview.addView(cameraView);
+
+
+        int cameraRotation = 0;
+        try {
+            int cameraId = findFrontFacingCameraID();
+            cameraRotation = getRotationCompensation(findFrontFacingCameraID() + "", this, this);
+            Log.d(TAG, "  getRotationCompensation success: " + cameraRotation + ", cameraId: " + cameraId);
+        } catch (CameraAccessException e) {
+            Log.e(TAG, "  getRotationCompensation error: " + e.getMessage(), e);
+        }
 
 
         final Output output = new Output(this);
@@ -280,6 +326,7 @@ public class FirebaseTest extends AppCompatActivity {
         final FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance()
                 .getVisionFaceDetector(realTimeOpts);
 
+        final int finalCameraRotation = cameraRotation;
         cameraView.addFrameProcessor(new FrameProcessor() {
 
             private boolean lock = false;
@@ -293,7 +340,7 @@ public class FirebaseTest extends AppCompatActivity {
                 if (lock) return;
                 lock = true;
 
-                final FirebaseVisionImage image = getVisionImageFromFrame(frame);
+                final FirebaseVisionImage image = getVisionImageFromFrame(frame, finalCameraRotation);
 
                 faceDetector.detectInImage(image).addOnSuccessListener(
                         new OnSuccessListener<List<FirebaseVisionFace>>() {
@@ -399,7 +446,6 @@ public class FirebaseTest extends AppCompatActivity {
 //            }
 //        });
 //        FLPreview.addView(hitArea);
-
 
 
         //TODO to review
@@ -722,6 +768,46 @@ public class FirebaseTest extends AppCompatActivity {
 //
 //        addImageToGallery(file.getAbsolutePath(), this);
 
+    }
+
+
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+    static {
+        ORIENTATIONS.append(Surface.ROTATION_0, 90);
+        ORIENTATIONS.append(Surface.ROTATION_90, 0);
+        ORIENTATIONS.append(Surface.ROTATION_180, 270);
+        ORIENTATIONS.append(Surface.ROTATION_270, 180);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private int getRotationCompensation(String cameraId, Activity activity, Context context)
+            throws CameraAccessException {
+        int deviceRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+        int rotationCompensation = ORIENTATIONS.get(deviceRotation);
+        CameraManager cameraManager = (CameraManager) context.getSystemService(CAMERA_SERVICE);
+        int sensorOrientation = cameraManager
+                .getCameraCharacteristics(cameraId)
+                .get(CameraCharacteristics.SENSOR_ORIENTATION);
+        rotationCompensation = (rotationCompensation + sensorOrientation + 270) % 360;
+        int result;
+        switch (rotationCompensation) {
+            case 0:
+                result = FirebaseVisionImageMetadata.ROTATION_0;
+                break;
+            case 90:
+                result = FirebaseVisionImageMetadata.ROTATION_90;
+                break;
+            case 180:
+                result = FirebaseVisionImageMetadata.ROTATION_180;
+                break;
+            case 270:
+                result = FirebaseVisionImageMetadata.ROTATION_270;
+                break;
+            default:
+                result = FirebaseVisionImageMetadata.ROTATION_0;
+                Log.e(TAG, "Bad rotation value: " + rotationCompensation);
+        }
+        return result;
     }
 
 
