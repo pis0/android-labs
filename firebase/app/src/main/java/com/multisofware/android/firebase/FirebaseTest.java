@@ -7,7 +7,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapRegionDecoder;
-import android.graphics.PointF;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -24,7 +23,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -49,12 +47,13 @@ import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.view.BackButton;
 import com.multisofware.android.view.Output;
+import com.multisofware.android.view.face.FaceLabel;
+import com.multisofware.android.view.face.FaceMask;
 import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
 import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
 import com.multisofware.android.view.tickets.TicketsMask;
-import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.CameraListener;
 import com.otaliastudios.cameraview.CameraOptions;
 import com.otaliastudios.cameraview.CameraView;
@@ -227,6 +226,8 @@ public class FirebaseTest extends AppCompatActivity {
 
     //    private android.hardware.Camera camera;
     //private CameraPreview preview;
+
+
     private CameraView cameraView;
     private FrameLayout FLPreview;
 
@@ -292,7 +293,7 @@ public class FirebaseTest extends AppCompatActivity {
         cameraView.addCameraListener(new CameraListener() {
             @Override
             public void onCameraOpened(@NonNull CameraOptions options) {
-                Log.d(TAG, "onCameraOpened: " + cameraView.getRotation() );
+                Log.d(TAG, "onCameraOpened: " + cameraView.getRotation());
             }
         });
 
@@ -309,6 +310,11 @@ public class FirebaseTest extends AppCompatActivity {
             Log.e(TAG, "  getRotationCompensation error: " + e.getMessage(), e);
         }
 
+
+        final FaceMask faceMask = new FaceMask(this);
+        FLPreview.addView(faceMask);
+        final FaceLabel faceLabel = new FaceLabel(this);
+        FLPreview.addView(faceLabel);
 
         final Output output = new Output(this);
         FLPreview.addView(output);
@@ -395,20 +401,16 @@ public class FirebaseTest extends AppCompatActivity {
                                 }
 
 
+                                //TODO to fix
                                 if (blinkCounter >= 1 && notBlinkCounter >= 1) {
                                     Bitmap bmp = image.getBitmap();
                                     output.setText("take picture! " + bmp);
-
                                     try {
                                         faceDetector.close();
                                         cameraView.clearFrameProcessors();
-
                                         createImageFile("", bmp);
-
                                     } catch (IOException ignored) {
                                     }
-
-
                                 } else {
                                     output.setText(result);
                                     lock = false;
@@ -772,6 +774,7 @@ public class FirebaseTest extends AppCompatActivity {
 
 
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
         ORIENTATIONS.append(Surface.ROTATION_90, 0);

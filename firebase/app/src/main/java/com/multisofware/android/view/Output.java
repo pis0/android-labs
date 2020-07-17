@@ -25,7 +25,7 @@ public class Output extends AppCompatTextView {
 
         super.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         super.setTextColor(0xffffffff);
-        super.setBackgroundColor(0x55000000);
+        super.setBackgroundColor(0x55de0000);
         super.setPivotX(0);
         super.setPivotY(0);
 //        super.setPadding(20, 20, 20, 20);
