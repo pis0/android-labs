@@ -2,6 +2,7 @@ package com.multisofware.android.view;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.BitmapFactory;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -9,7 +10,6 @@ import android.widget.LinearLayout;
 
 import androidx.appcompat.widget.AppCompatImageButton;
 
-import com.multisofware.android.firebase.FirebaseTest;
 import com.multisofware.android.firebase.R;
 
 public class BackButton extends AppCompatImageButton {
@@ -24,11 +24,18 @@ public class BackButton extends AppCompatImageButton {
         int height = displayMetrics.heightPixels;
         int width = displayMetrics.widthPixels;
 
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(150, 150);
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeResource(getResources(), R.mipmap.ic_back, options);
+        int iconWidth = options.outWidth;
+        int iconHeight = options.outHeight;
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(iconWidth, iconHeight);
         super.setLayoutParams(params);
 
         super.setImageResource(R.mipmap.ic_back);
         super.setBackgroundColor(0x00);
+
 
         //TODO to fix (tickets settings)
 //        super.setRotation(90);

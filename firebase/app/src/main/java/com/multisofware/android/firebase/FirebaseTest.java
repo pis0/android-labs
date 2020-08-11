@@ -46,6 +46,7 @@ import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.view.BackButton;
+import com.multisofware.android.view.HitArea;
 import com.multisofware.android.view.Output;
 import com.multisofware.android.view.face.FaceLabel;
 import com.multisofware.android.view.face.FaceMask;
@@ -175,37 +176,37 @@ public class FirebaseTest extends AppCompatActivity {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY);
     }
 
-    private static android.hardware.Camera openFrontFacingCamera() {
-        int cameraCount = 0;
-        android.hardware.Camera cam = null;
-        android.hardware.Camera.CameraInfo cameraInfo = new android.hardware.Camera.CameraInfo();
-        cameraCount = android.hardware.Camera.getNumberOfCameras();
-        for (int camIdx = 0; camIdx < cameraCount; camIdx++) {
-            android.hardware.Camera.getCameraInfo(camIdx, cameraInfo);
+//    private static android.hardware.Camera openFrontFacingCamera() {
+//        int cameraCount = 0;
+//        android.hardware.Camera cam = null;
+//        android.hardware.Camera.CameraInfo cameraInfo = new android.hardware.Camera.CameraInfo();
+//        cameraCount = android.hardware.Camera.getNumberOfCameras();
+//        for (int camIdx = 0; camIdx < cameraCount; camIdx++) {
+//            android.hardware.Camera.getCameraInfo(camIdx, cameraInfo);
+//
+//            if (cameraInfo.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
+//                try {
+//                    cam = android.hardware.Camera.open(camIdx);
+//                } catch (RuntimeException e) {
+//                    Log.e(TAG, "Camera failed to open: " + e.getLocalizedMessage());
+//                }
+//            }
+//        }
+//
+//        return cam;
+//    }
 
-            if (cameraInfo.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                try {
-                    cam = android.hardware.Camera.open(camIdx);
-                } catch (RuntimeException e) {
-                    Log.e(TAG, "Camera failed to open: " + e.getLocalizedMessage());
-                }
-            }
-        }
-
-        return cam;
-    }
-
-    private static android.hardware.Camera getCameraInstance() {
-        android.hardware.Camera camera = null;
-        try {
-            // regular back camera
-//            camera = android.hardware.Camera.open();
-            camera = openFrontFacingCamera();
-        } catch (Exception e) {
-            Log.e(TAG, e.getMessage(), e);
-        }
-        return camera;
-    }
+//    private static android.hardware.Camera getCameraInstance() {
+//        android.hardware.Camera camera = null;
+//        try {
+//            // regular back camera
+//            //camera = android.hardware.Camera.open();
+//            camera = openFrontFacingCamera();
+//        } catch (Exception e) {
+//            Log.e(TAG, e.getMessage(), e);
+//        }
+//        return camera;
+//    }
 
 
     private int findFrontFacingCameraID() {
@@ -311,10 +312,10 @@ public class FirebaseTest extends AppCompatActivity {
         }
 
 
-        final FaceMask faceMask = new FaceMask(this);
-        FLPreview.addView(faceMask);
-        final FaceLabel faceLabel = new FaceLabel(this);
-        FLPreview.addView(faceLabel);
+//        final FaceMask faceMask = new FaceMask(this);
+//        FLPreview.addView(faceMask);
+//        final FaceLabel faceLabel = new FaceLabel(this);
+//        FLPreview.addView(faceLabel);
 
         final Output output = new Output(this);
         FLPreview.addView(output);
@@ -440,14 +441,14 @@ public class FirebaseTest extends AppCompatActivity {
         //preview = findViewById(R.id.cameraView);
         //preview.setLifecycleOwner(this);
 
-//        HitArea hitArea = new HitArea(this);
-//        hitArea.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Log.d(TAG, "setOnClickListener: " + v);
-//            }
-//        });
-//        FLPreview.addView(hitArea);
+        HitArea hitArea = new HitArea(this);
+        hitArea.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "setOnClickListener: " + v);
+            }
+        });
+        FLPreview.addView(hitArea);
 
 
         //TODO to review
@@ -478,8 +479,8 @@ public class FirebaseTest extends AppCompatActivity {
             showToast("onPictureTaken");
             Log.d(TAG, "onPictureTaken - data:" + data);
 
-//            processData(data);
-            camera.startPreview();
+            //processData(data);
+            //camera.startPreview();
 
         }
 
@@ -488,7 +489,7 @@ public class FirebaseTest extends AppCompatActivity {
     private void processData(byte[] data) {
         try {
 //            barCodeDetector(480, data);
-//            textDetector(2048, data);
+            textDetector(2048, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
