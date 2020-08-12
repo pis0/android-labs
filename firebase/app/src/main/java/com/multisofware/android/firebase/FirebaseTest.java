@@ -6,16 +6,18 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
-import android.graphics.Rect;
+import android.graphics.ImageFormat;
+import android.graphics.PointF;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.media.Image;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseIntArray;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -38,37 +40,30 @@ import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetector;
 import com.google.firebase.ml.vision.barcode.FirebaseVisionBarcodeDetectorOptions;
 import com.google.firebase.ml.vision.common.FirebaseVisionImage;
 import com.google.firebase.ml.vision.common.FirebaseVisionImageMetadata;
-import com.google.firebase.ml.vision.common.FirebaseVisionPoint;
-import com.google.firebase.ml.vision.face.FirebaseVisionFace;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions;
-import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark;
 import com.google.firebase.ml.vision.text.FirebaseVisionText;
 import com.google.firebase.ml.vision.text.FirebaseVisionTextRecognizer;
 import com.multisofware.android.view.BackButton;
 import com.multisofware.android.view.HitArea;
-import com.multisofware.android.view.Output;
-import com.multisofware.android.view.face.FaceLabel;
-import com.multisofware.android.view.face.FaceMask;
 import com.multisofware.android.view.qrcode.QRCodeLabel;
 import com.multisofware.android.view.qrcode.QRCodeMask;
 import com.multisofware.android.view.tickets.TicketsCounter;
 import com.multisofware.android.view.tickets.TicketsLabel;
 import com.multisofware.android.view.tickets.TicketsMask;
+import com.otaliastudios.cameraview.CameraException;
 import com.otaliastudios.cameraview.CameraListener;
-import com.otaliastudios.cameraview.CameraOptions;
 import com.otaliastudios.cameraview.CameraView;
+import com.otaliastudios.cameraview.PictureResult;
 import com.otaliastudios.cameraview.controls.Audio;
 import com.otaliastudios.cameraview.controls.Engine;
 import com.otaliastudios.cameraview.controls.Facing;
 import com.otaliastudios.cameraview.controls.Flash;
-import com.otaliastudios.cameraview.frame.Frame;
-import com.otaliastudios.cameraview.frame.FrameProcessor;
 import com.otaliastudios.cameraview.size.Size;
 import com.otaliastudios.cameraview.size.SizeSelector;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -234,18 +229,18 @@ public class FirebaseTest extends AppCompatActivity {
 
     private Boolean takePictureLock = false;
 
-    private FirebaseVisionImage getVisionImageFromFrame(Frame frame, int rotation) {
-        FirebaseVisionImageMetadata imageMetaData = new FirebaseVisionImageMetadata.Builder()
-                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
-                .setRotation(rotation)
-                .setHeight(frame.getSize().getHeight())
-                .setWidth(frame.getSize().getWidth())
-                .build();
-
-        byte[] frameBytes = frame.getData();
-
-        return FirebaseVisionImage.fromByteArray(frameBytes, imageMetaData);
-    }
+//    private FirebaseVisionImage getVisionImageFromFrame(Frame frame, int rotation) {
+//        FirebaseVisionImageMetadata imageMetaData = new FirebaseVisionImageMetadata.Builder()
+//                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_YV12)
+//                .setRotation(rotation)
+//                .setHeight(frame.getSize().getHeight())
+//                .setWidth(frame.getSize().getWidth())
+//                .build();
+//
+//        byte[] frameBytes = frame.getData();
+//
+//        return FirebaseVisionImage.fromByteArray(frameBytes, imageMetaData);
+//    }
 
     @Override
     protected void onDestroy() {
@@ -271,30 +266,89 @@ public class FirebaseTest extends AppCompatActivity {
         cameraView = new CameraView(this);
         cameraView.setLifecycleOwner(this);
         cameraView.setEngine(Engine.CAMERA2);
-        cameraView.setFacing(Facing.FRONT);
+        cameraView.setFacing(Facing.BACK);
         cameraView.setAudio(Audio.OFF);
         cameraView.setFlash(Flash.OFF);
         cameraView.setUseDeviceOrientation(true);
-        cameraView.setPreviewStreamSize(new SizeSelector() {
+//        cameraView.setPreviewStreamSize(new SizeSelector() {
+//            @NonNull
+//            @Override
+//            public List<Size> select(@NonNull List<Size> source) {
+//
+//                for (Size size : source) {
+//                    Log.d(TAG, "getSupportedPictureSizes: " + size.getWidth() + ", " + size.getHeight());
+//                }
+//
+//                List<Size> list = new ArrayList<>(1);
+//                Size size = new Size(288, 352);
+//                list.add(size);
+//
+//                return list;
+//            }
+//        });
+        cameraView.setPictureSize(new SizeSelector() {
             @NonNull
             @Override
             public List<Size> select(@NonNull List<Size> source) {
-
+                Size previewSize = new Size(cameraView.getWidth(), cameraView.getHeight());
+                Log.d(TAG, "previewSize: " + previewSize.getWidth() + ", " + previewSize.getHeight());
+                float previewRatio = ((float) previewSize.getWidth()) / ((float) previewSize.getHeight());
+                float closerDiff = Integer.MAX_VALUE;
+                float currentDiff = 0;
+                Size closerSize = null;
+                Collections.sort(source, new Comparator<Size>() {
+                    @Override
+                    public int compare(Size a, Size b) {
+                        return b.getHeight() - a.getHeight();
+                    }
+                });
                 for (Size size : source) {
-                    Log.d(TAG, "getSupportedPictureSizes: " + size.getWidth() + ", " + size.getHeight());
+                    Log.d(TAG, "supported size: " + size.getWidth() + ", " + size.getHeight());
+                    float currentRatio = ((float) size.getWidth()) / ((float) size.getHeight());
+                    currentDiff = Math.abs(currentRatio - previewRatio);
+                    if (currentDiff < closerDiff) {
+                        closerDiff = currentDiff;
+                        closerSize = size;
+                    }
                 }
-
-                List<Size> list = new ArrayList<>(1);
-                Size size = new Size(288, 352);
-                list.add(size);
-
-                return list;
+                if (closerSize != null) {
+                    Log.d(TAG, "resolveCameraSize - closerSize: " + closerSize.getWidth() + "x" + closerSize.getHeight());
+                    List<Size> list = new ArrayList<>(1);
+                    list.add(closerSize);
+                    return list;
+                }
+                return source;
             }
         });
         cameraView.addCameraListener(new CameraListener() {
+
             @Override
-            public void onCameraOpened(@NonNull CameraOptions options) {
-                Log.d(TAG, "onCameraOpened: " + cameraView.getRotation());
+            public void onAutoFocusStart(@NonNull PointF point) {
+                Log.d(TAG, "onAutoFocusStart");
+            }
+
+            @Override
+            public void onAutoFocusEnd(boolean successful, @NonNull PointF point) {
+                Log.d(TAG, "onAutoFocusEnd - successful:" + successful);
+                if (successful) {
+                    Log.d(TAG, "hitArea.onTouch -  takePictureLock:" + takePictureLock + ", focus - x:" + point.x + ", y:" + point.y);
+                    cameraView.takePicture();
+                    return;
+                }
+                takePictureLock = false;
+            }
+
+            @Override
+            public void onPictureTaken(@NonNull PictureResult result) {
+                byte[] data = result.getData();
+                showToast("Processando...");
+                Log.d(TAG, "onPictureTaken - data:" + data.length);
+                processData(data);
+            }
+
+            @Override
+            public void onCameraError(@NonNull CameraException exception) {
+                Log.e(TAG, "onCameraError: " + exception.getMessage(), exception);
             }
         });
 
@@ -302,152 +356,168 @@ public class FirebaseTest extends AppCompatActivity {
         FLPreview.addView(cameraView);
 
 
-        int cameraRotation = 0;
-        try {
-            int cameraId = findFrontFacingCameraID();
-            cameraRotation = getRotationCompensation(findFrontFacingCameraID() + "", this, this);
-            Log.d(TAG, "  getRotationCompensation success: " + cameraRotation + ", cameraId: " + cameraId);
-        } catch (CameraAccessException e) {
-            Log.e(TAG, "  getRotationCompensation error: " + e.getMessage(), e);
-        }
-
-
-//        final FaceMask faceMask = new FaceMask(this);
-//        FLPreview.addView(faceMask);
-//        final FaceLabel faceLabel = new FaceLabel(this);
-//        FLPreview.addView(faceLabel);
-
-        final Output output = new Output(this);
-        FLPreview.addView(output);
-
-
-        FirebaseVisionFaceDetectorOptions realTimeOpts =
-                new FirebaseVisionFaceDetectorOptions.Builder()
-                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
-//                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
-//                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
-                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
-                        .enableTracking()
-                        .build();
-
-        final FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance()
-                .getVisionFaceDetector(realTimeOpts);
-
-        final int finalCameraRotation = cameraRotation;
-        cameraView.addFrameProcessor(new FrameProcessor() {
-
-            private boolean lock = false;
-            private int prevTrakingId = -1;
-            private int blinkCounter = 0;
-            private int notBlinkCounter = 0;
-
-            @Override
-            public void process(@NonNull final Frame frame) {
-
-                if (lock) return;
-                lock = true;
-
-                final FirebaseVisionImage image = getVisionImageFromFrame(frame, finalCameraRotation);
-
-                faceDetector.detectInImage(image).addOnSuccessListener(
-                        new OnSuccessListener<List<FirebaseVisionFace>>() {
-                            @Override
-                            public void onSuccess(List<FirebaseVisionFace> faces) {
-                                //Log.d(TAG, "faceDetector success. - faces.length:" + faces.size());
-
-                                String result = "";
-                                result += "faces: " + faces.size() + ", " + cameraView.getRotation();
-
-//                                if (faces.size() == 0) {
-//                                    blinkCounter = 0;
-//                                    notBlinkCounter = 0;
-//                                }
-
-                                for (FirebaseVisionFace face : faces) {
-
-                                    Rect bounds = face.getBoundingBox();
-                                    result += "\nbounds: " + bounds.toShortString();
-
-                                    float rotY = face.getHeadEulerAngleY();
-                                    float rotZ = face.getHeadEulerAngleZ();
-                                    result += "\nrotY: " + rotY + ", rotZ: " + rotZ;
-
-                                    FirebaseVisionFaceLandmark leftEye = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE);
-                                    FirebaseVisionFaceLandmark rightEye = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE);
-                                    if (leftEye != null && rightEye != null) {
-                                        FirebaseVisionPoint leftEyePos = leftEye.getPosition();
-                                        FirebaseVisionPoint rightEyePos = rightEye.getPosition();
-                                        result += "\nleftEyePos: " + leftEyePos.toString() + ", rightEyePos: " + rightEyePos.toString();
-                                    }
-
-                                    result += "\nsmileProb: " + face.getSmilingProbability();
-
-                                    if (face.getLeftEyeOpenProbability() < 0.4 && face.getRightEyeOpenProbability() < 0.4) {
-                                        result += "\nblinking - " + blinkCounter++;
-                                        notBlinkCounter = 0;
-                                    } else {
-                                        result += "\nnot blinking" + notBlinkCounter++;
-                                    }
-
-
-                                    if (face.getTrackingId() != FirebaseVisionFace.INVALID_ID) {
-                                        int id = face.getTrackingId();
-                                        result += "\ntrackingId: " + id;
-                                        if (prevTrakingId != id) {
-                                            prevTrakingId = id;
-                                            blinkCounter = 0;
-                                            notBlinkCounter = 0;
-                                        }
-                                    }
-                                }
-
-
-                                //TODO to fix
-                                if (blinkCounter >= 1 && notBlinkCounter >= 1) {
-                                    Bitmap bmp = image.getBitmap();
-                                    output.setText("take picture! " + bmp);
-                                    try {
-                                        faceDetector.close();
-                                        cameraView.clearFrameProcessors();
-                                        createImageFile("", bmp);
-                                    } catch (IOException ignored) {
-                                    }
-                                } else {
-                                    output.setText(result);
-                                    lock = false;
-                                }
-
-
-                            }
-                        })
-                        .addOnFailureListener(
-                                new OnFailureListener() {
-                                    @Override
-                                    public void onFailure(@NonNull Exception e) {
-                                        Log.e(TAG, "  failed - error:" + e.getMessage(), e);
-
-//                                        try {
-//                                            faceDetector.close();
-                                        lock = false;
-//                                        } catch (IOException ignored) {
+        // frame processor
+//        int cameraRotation = 0;
+//        try {
+//            int cameraId = findFrontFacingCameraID();
+//            cameraRotation = getRotationCompensation(findFrontFacingCameraID() + "", this, this);
+//            Log.d(TAG, "  getRotationCompensation success: " + cameraRotation + ", cameraId: " + cameraId);
+//        } catch (CameraAccessException e) {
+//            Log.e(TAG, "  getRotationCompensation error: " + e.getMessage(), e);
+//        }
+//
+//
+////        final FaceMask faceMask = new FaceMask(this);
+////        FLPreview.addView(faceMask);
+////        final FaceLabel faceLabel = new FaceLabel(this);
+////        FLPreview.addView(faceLabel);
+//
+//        final Output output = new Output(this);
+//        FLPreview.addView(output);
+//
+//        FirebaseVisionFaceDetectorOptions realTimeOpts =
+//                new FirebaseVisionFaceDetectorOptions.Builder()
+//                        .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
+////                        .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
+////                        .setContourMode(FirebaseVisionFaceDetectorOptions.ALL_CONTOURS)
+//                        .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+//                        .enableTracking()
+//                        .build();
+//        final FirebaseVisionFaceDetector faceDetector = FirebaseVision.getInstance()
+//                .getVisionFaceDetector(realTimeOpts);
+//        final int finalCameraRotation = cameraRotation;
+//
+//        cameraView.addFrameProcessor(new FrameProcessor() {
+//
+//            private boolean lock = false;
+//            private int prevTrakingId = -1;
+//            private int blinkCounter = 0;
+//            private int notBlinkCounter = 0;
+//            @Override
+//            public void process(@NonNull final Frame frame) {
+//
+//                if (lock) return;
+//                lock = true;
+//
+//                final FirebaseVisionImage image = getVisionImageFromFrame(frame, finalCameraRotation);
+//
+//                faceDetector.detectInImage(image).addOnSuccessListener(
+//                        new OnSuccessListener<List<FirebaseVisionFace>>() {
+//                            @Override
+//                            public void onSuccess(List<FirebaseVisionFace> faces) {
+//                                //Log.d(TAG, "faceDetector success. - faces.length:" + faces.size());
+//
+//                                String result = "";
+//                                result += "faces: " + faces.size() + ", " + cameraView.getRotation();
+//
+////                                if (faces.size() == 0) {
+////                                    blinkCounter = 0;
+////                                    notBlinkCounter = 0;
+////                                }
+//
+//                                for (FirebaseVisionFace face : faces) {
+//
+//                                    Rect bounds = face.getBoundingBox();
+//                                    result += "\nbounds: " + bounds.toShortString();
+//
+//                                    float rotY = face.getHeadEulerAngleY();
+//                                    float rotZ = face.getHeadEulerAngleZ();
+//                                    result += "\nrotY: " + rotY + ", rotZ: " + rotZ;
+//
+//                                    FirebaseVisionFaceLandmark leftEye = face.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE);
+//                                    FirebaseVisionFaceLandmark rightEye = face.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE);
+//                                    if (leftEye != null && rightEye != null) {
+//                                        FirebaseVisionPoint leftEyePos = leftEye.getPosition();
+//                                        FirebaseVisionPoint rightEyePos = rightEye.getPosition();
+//                                        result += "\nleftEyePos: " + leftEyePos.toString() + ", rightEyePos: " + rightEyePos.toString();
+//                                    }
+//
+//                                    result += "\nsmileProb: " + face.getSmilingProbability();
+//
+//                                    if (face.getLeftEyeOpenProbability() < 0.4 && face.getRightEyeOpenProbability() < 0.4) {
+//                                        result += "\nblinking - " + blinkCounter++;
+//                                        notBlinkCounter = 0;
+//                                    } else {
+//                                        result += "\nnot blinking" + notBlinkCounter++;
+//                                    }
+//
+//
+//                                    if (face.getTrackingId() != FirebaseVisionFace.INVALID_ID) {
+//                                        int id = face.getTrackingId();
+//                                        result += "\ntrackingId: " + id;
+//                                        if (prevTrakingId != id) {
+//                                            prevTrakingId = id;
+//                                            blinkCounter = 0;
+//                                            notBlinkCounter = 0;
 //                                        }
-                                    }
-                                });
-
-            }
-        });
+//                                    }
+//                                }
+//
+//
+//                                //TODO to fix
+//                                if (blinkCounter >= 1 && notBlinkCounter >= 1) {
+//                                    Bitmap bmp = image.getBitmap();
+//                                    output.setText("take picture! " + bmp);
+//                                    try {
+//                                        faceDetector.close();
+//                                        cameraView.clearFrameProcessors();
+//                                        createImageFile("", bmp);
+//                                    } catch (IOException ignored) {
+//                                    }
+//                                } else {
+//                                    output.setText(result);
+//                                    lock = false;
+//                                }
+//
+//
+//                            }
+//                        })
+//                        .addOnFailureListener(
+//                                new OnFailureListener() {
+//                                    @Override
+//                                    public void onFailure(@NonNull Exception e) {
+//                                        Log.e(TAG, "  failed - error:" + e.getMessage(), e);
+//
+////                                        try {
+////                                            faceDetector.close();
+//                                        lock = false;
+////                                        } catch (IOException ignored) {
+////                                        }
+//                                    }
+//                                });
+//
+//            }
+//        });
 
 
         //preview = findViewById(R.id.cameraView);
         //preview.setLifecycleOwner(this);
 
-        HitArea hitArea = new HitArea(this);
-        hitArea.setOnClickListener(new View.OnClickListener() {
+        final HitArea hitArea = new HitArea(this);
+        hitArea.setOnTouchListener(new View.OnTouchListener() {
             @Override
-            public void onClick(View v) {
-                Log.d(TAG, "setOnClickListener: " + v);
+            public boolean onTouch(View v, MotionEvent event) {
+                if (takePictureLock) return false;
+                takePictureLock = true;
+
+                int pointerId = event.getPointerId(0);
+                int pointerIndex = event.findPointerIndex(pointerId);
+                float x = event.getX(pointerIndex);
+                float y = event.getY(pointerIndex);
+
+                cameraView.startAutoFocus(x, y);
+
+                return true;
             }
         });
+//        HitArea hitArea = new HitArea(this);
+//        hitArea.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Log.d(TAG, "setOnClickListener: " + v);
+//
+//            }
+//        });
         FLPreview.addView(hitArea);
 
 
@@ -488,8 +558,8 @@ public class FirebaseTest extends AppCompatActivity {
 
     private void processData(byte[] data) {
         try {
-//            barCodeDetector(480, data);
-            textDetector(2048, data);
+            barCodeDetector(2048, data);
+//            textDetector(2048, data);
         } catch (Exception e) {
             Log.e(TAG, "error: " + e.getMessage(), e);
         }
@@ -512,72 +582,121 @@ public class FirebaseTest extends AppCompatActivity {
 
     private FirebaseVisionImage createFirebaseVisionImage(int maxSize, byte[] data) {
 
-//        final BitmapFactory.Options options = new BitmapFactory.Options();
+        // from bytes (does not working so far!)
+//        BitmapFactory.Options options = new BitmapFactory.Options();
 //        options.inJustDecodeBounds = true;
 //        BitmapFactory.decodeByteArray(data, 0, data.length, options);
-//        int originalW = options.outWidth;
-//        int originalH = options.outHeight;
+//        final int originalW = options.outWidth;
+//        final int originalH = options.outHeight;
+//        Log.d(TAG, "  createFirebaseVisionImage - originalW: " + originalW + ", originalH: " + originalH );
+//        int cameraRotation = 0;
+//        try {
+//            int cameraId = findFrontFacingCameraID();
+//            cameraRotation = getRotationCompensation(findFrontFacingCameraID() + "", this, this);
+//            Log.d(TAG, "  getRotationCompensation success: " + cameraRotation + ", cameraId: " + cameraId);
+//        } catch (CameraAccessException e) {
+//            Log.e(TAG, "  getRotationCompensation error: " + e.getMessage(), e);
+//        }
+//        FirebaseVisionImageMetadata imageMetaData = new FirebaseVisionImageMetadata.Builder()
+//                .setFormat(FirebaseVisionImageMetadata.IMAGE_FORMAT_NV21)
+//                .setRotation(cameraRotation)
+//                .setHeight(originalH)
+//                .setWidth(originalW)
+//                .build();
+//        return FirebaseVisionImage.fromByteArray(data, imageMetaData);
+
+
+        // from bitmap
+        BitmapFactory.Options options = new BitmapFactory.Options();
+//        options.inJustDecodeBounds = true;
+//        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+//        final int originalW = options.outWidth;
+//        final int originalH = options.outHeight;
+//        Log.d(TAG, "originalW:" + originalW + " - originalH:" + originalH);
 //
-//        Log.d(TAG, "processData - MAX_SIZE: " + maxSize + ", originalW: " + originalW + ", originalH: " + originalH);
-//
-//        //float scale = (float) ((double) maxSize / (double) originalH);
-//        Matrix matrix = new Matrix();
-//        matrix.postRotate(
-//                90.0f
-//        );
+        options.inJustDecodeBounds = false;
+//        options.inScaled = true;
+//        float scale = (float) maxSize / (float) originalW;
+//        int sampleSize = FirebaseVisionImages.resolveSampleSize(options, (int) maxSize, (int) (originalH * scale));
+//        options.inSampleSize = sampleSize;
+        Bitmap bmp = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
-        BitmapFactory.Options options1 = new BitmapFactory.Options();
-        options1.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(data, 0, data.length, options1);
-        final int originalW1 = options1.outWidth;
-        final int originalH1 = options1.outHeight;
-
-        BitmapFactory.Options options2 = new BitmapFactory.Options();
-        float scale = (float) maxSize / (float) originalH1;
-        options2.inSampleSize = resolveSampleSize(options2, (int) (originalW1 * scale), maxSize);
-        options2.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(data, 0, data.length, options2);
-        final int originalW2 = options2.outWidth;
-        final int originalH2 = options2.outHeight;
-
-        Bitmap originalBmp = null;
-        try {
-
-            BitmapRegionDecoder rDecoder = BitmapRegionDecoder.newInstance(
-                    data,
-                    0,
-                    data.length,
-                    false
-            );
-            originalBmp = rDecoder.decodeRegion(
-                    new Rect((originalW2 / 3) * 2, originalH2 / 3, (originalW2 / 3) * 3, (originalH2 / 3) * 2),
-                    options2
-            );
-            rDecoder.recycle();
-        } catch (Exception e) {
-            Log.e(TAG, "processData error: " + e.getMessage(), e);
+        FirebaseVisionImage firebaseVisionImage = null;
+        if (bmp != null) {
+            firebaseVisionImage = FirebaseVisionImage.fromBitmap(bmp);
+            Log.d(TAG, "bmp:" + bmp + " - " + bmp.getWidth() + ", " + bmp.getHeight());// + ", sampleSize:" + sampleSize);
         }
 
 
-        //TODO to implement crop
-//        FirebaseVisionImages firebaseVisionImages = new FirebaseVisionImages(this);
-//        firebaseVisionImages.setBitmap(originalBmp);
+        return firebaseVisionImage;
 
 
-        try {
-
-            if (originalBmp != null) {
-                Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight() + ", density: " + originalBmp.getDensity());
-                createImageFile("temp", originalBmp);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-//        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(firebaseVisionImages.imagesToValidate[1]);
-//        Log.d(TAG, "processData - result:" + firebaseVisionImages.imagesToValidate[1] + " - " + firebaseVisionImages.imagesToValidate[1].getWidth() + ", " + firebaseVisionImages.imagesToValidate[1].getHeight());
-//        return firebaseVisionImage;
+////        final BitmapFactory.Options options = new BitmapFactory.Options();
+////        options.inJustDecodeBounds = true;
+////        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+////        int originalW = options.outWidth;
+////        int originalH = options.outHeight;
+////
+////        Log.d(TAG, "processData - MAX_SIZE: " + maxSize + ", originalW: " + originalW + ", originalH: " + originalH);
+////
+////        //float scale = (float) ((double) maxSize / (double) originalH);
+////        Matrix matrix = new Matrix();
+////        matrix.postRotate(
+////                90.0f
+////        );
+//
+//        BitmapFactory.Options options1 = new BitmapFactory.Options();
+//        options1.inJustDecodeBounds = true;
+//        BitmapFactory.decodeByteArray(data, 0, data.length, options1);
+//        final int originalW1 = options1.outWidth;
+//        final int originalH1 = options1.outHeight;
+//
+//        BitmapFactory.Options options2 = new BitmapFactory.Options();
+//        float scale = (float) maxSize / (float) originalH1;
+//        options2.inSampleSize = resolveSampleSize(options2, (int) (originalW1 * scale), maxSize);
+//        options2.inJustDecodeBounds = true;
+//        BitmapFactory.decodeByteArray(data, 0, data.length, options2);
+//        final int originalW2 = options2.outWidth;
+//        final int originalH2 = options2.outHeight;
+//
+//        Bitmap originalBmp = null;
+//        try {
+//
+//            BitmapRegionDecoder rDecoder = BitmapRegionDecoder.newInstance(
+//                    data,
+//                    0,
+//                    data.length,
+//                    false
+//            );
+//            originalBmp = rDecoder.decodeRegion(
+//                    new Rect((originalW2 / 3) * 2, originalH2 / 3, (originalW2 / 3) * 3, (originalH2 / 3) * 2),
+//                    options2
+//            );
+//            rDecoder.recycle();
+//        } catch (Exception e) {
+//            Log.e(TAG, "processData error: " + e.getMessage(), e);
+//        }
+//
+//
+//        //TODO to implement crop
+////        FirebaseVisionImages firebaseVisionImages = new FirebaseVisionImages(this);
+////        firebaseVisionImages.setBitmap(originalBmp);
+//
+//
+//        try {
+//
+//            if (originalBmp != null) {
+//                Log.d(TAG, "processData - outWidth: " + originalBmp.getWidth() + ", outHeight: " + originalBmp.getHeight() + ", density: " + originalBmp.getDensity());
+//                createImageFile("temp", originalBmp);
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return null;
+////        FirebaseVisionImage firebaseVisionImage = FirebaseVisionImage.fromBitmap(firebaseVisionImages.imagesToValidate[1]);
+////        Log.d(TAG, "processData - result:" + firebaseVisionImages.imagesToValidate[1] + " - " + firebaseVisionImages.imagesToValidate[1].getWidth() + ", " + firebaseVisionImages.imagesToValidate[1].getHeight());
+////        return firebaseVisionImage;
 
 
     }
@@ -595,7 +714,7 @@ public class FirebaseTest extends AppCompatActivity {
 
     private void barCodeDetector(int maxSize, byte[] data) {
 
-        FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
+        final FirebaseVisionImage firebaseVisionImage = createFirebaseVisionImage(maxSize, data);
 
         if (firebaseVisionImage == null) {
             Log.d(TAG, "barCodeDetector error: firebaseVisionImage is null");
@@ -613,17 +732,20 @@ public class FirebaseTest extends AppCompatActivity {
                     public void onSuccess(List<FirebaseVisionBarcode> barcodes) {
                         Log.d(TAG, "onSuccess: " + barcodes);
                         takePictureLock = false;
+
                         for (FirebaseVisionBarcode barcode : barcodes) {
                             int valueType = barcode.getValueType();
                             Log.d(TAG, "valueType: " + valueType + ", barcode:" + barcode.toString());
                             switch (valueType) {
-                                case FirebaseVisionBarcode.FORMAT_QR_CODE:
+                                //case FirebaseVisionBarcode.FORMAT_QR_CODE:
+                                case FirebaseVisionBarcode.FORMAT_CODABAR:
                                 case FirebaseVisionBarcode.TYPE_TEXT:
                                     String temp = barcode.getDisplayValue();
                                     Log.d(TAG, "temp: " + temp);
                                     break;
                             }
                         }
+                        firebaseVisionImage.getBitmap().recycle();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -631,6 +753,7 @@ public class FirebaseTest extends AppCompatActivity {
                     public void onFailure(@NonNull Exception e) {
                         Log.e(TAG, "error: " + e.getMessage(), e);
                         takePictureLock = false;
+                        firebaseVisionImage.getBitmap().recycle();
                     }
                 });
     }
