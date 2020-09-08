@@ -19,6 +19,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,9 +33,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 
 @SuppressLint("SetTextI18n")
 public class MainActivity extends AppCompatActivity {
@@ -114,36 +114,36 @@ public class MainActivity extends AppCompatActivity {
                     outputStream.write(PrinterCommands.ESC_ALIGN_CENTER);
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
 
-                    byte[] format = { 27, 33, 0 };
-                    byte[] formatHelper = { 27, 33, 0 };
+                    byte[] format = {27, 33, 0};
+                    byte[] formatHelper = {27, 33, 0};
 
-                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("Cooperativa Central Aurora Alimentos").getBytes());
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    format[2] = ((byte) (0x8 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("Comprovante de Coleta de Leite").getBytes());
                     outputStream.write(PrinterCommands.FEED_LINE);
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x2 | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("Produtor:").getBytes());
                     outputStream.write(PrinterCommands.FEED_LINE);
 //                    format[2] = formatHelper[2];
-                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    format[2] = ((byte) (0x8 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("341517 - ADILSON NISTERVITZ").getBytes());
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x2 | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("Placa:  ").getBytes());
 //                    format[2] = formatHelper[2];
-                    format[2] = ((byte)(0x8 | formatHelper[2]));
+                    format[2] = ((byte) (0x8 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("MEH1605").getBytes());
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
@@ -151,40 +151,33 @@ public class MainActivity extends AppCompatActivity {
                     outputStream.write(PrinterCommands.FEED_LINE);
 
 
-                    format[2] = ((byte)(0x8  | formatHelper[2]));  // Bold
-                    format[2] = ((byte)(0x20 | formatHelper[2]));  // Width
+                    format[2] = ((byte) (0x8 | formatHelper[2]));  // Bold
+                    format[2] = ((byte) (0x20 | formatHelper[2]));  // Width
                     outputStream.write(format);
                     outputStream.write(("COLETA REJEITADA").getBytes());
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("LEITE COM + DE 48 HORAS").getBytes());
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_30);
                     outputStream.write(PrinterCommands.FEED_LINE);
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("05/02/2020").getBytes());
                     outputStream.write(PrinterCommands.SET_LINE_SPACING_24);
                     outputStream.write(PrinterCommands.FEED_LINE);
 
-                    format[2] = ((byte)(0x2  | formatHelper[2]));
+                    format[2] = ((byte) (0x2 | formatHelper[2]));
                     outputStream.write(format);
                     outputStream.write(("www.auroraalimentos.com.br").getBytes());
                     outputStream.write(PrinterCommands.FEED_LINE);
                     outputStream.write(PrinterCommands.FEED_LINE);
                     outputStream.write(PrinterCommands.FEED_LINE);
                     outputStream.write(PrinterCommands.FEED_LINE);
-
-
-
-
-
-
-
 
 
                 } catch (Exception e) {
@@ -329,7 +322,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     //print text
     private void printText(String msg) {
         try {
@@ -353,7 +345,30 @@ public class MainActivity extends AppCompatActivity {
     private void printImage(Bitmap image) {
         try {
 
-            printText(Objects.requireNonNull(PrinterUtils.decodeBitmap(image)));
+            // TODO to fix
+            final int MAX_SIZE = 592;
+            int originalW = image.getWidth();
+            int originalH = image.getHeight();
+            Bitmap imageToUpload = Bitmap.createScaledBitmap(
+                    image,
+                    MAX_SIZE,
+                    264, //2728, //(int) (((double) MAX_SIZE / (double) originalW) * (double) originalH),
+                    false);
+            if (imageToUpload != null) {
+                Log.d(TAG, "image - " + originalW + ", " + originalH);
+                Log.d(TAG, "imageToUpload - " + imageToUpload.getWidth() + ", " + imageToUpload.getHeight() + ", " + imageToUpload.getDensity());
+            } else {
+                Log.d(TAG, "imageToUpload is null");
+                return;
+            }
+
+            //TODO to delete
+            // D/BluetoothPrinter: image - 480, 960
+            // D/BluetoothPrinter: imageToUpload - 592, 2728 - r 4.6081
+//            return;
+            printText(Objects.requireNonNull(PrinterUtils.decodeBitmap(
+                    imageToUpload // image
+            )));
 
             lblPrinterName.setText("Printing Image...");
         } catch (Exception e) {
@@ -399,6 +414,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private BitSet dots;
+
     private void convertARGBToGS(Bitmap original, int width, int height) {
         int pixel;
         int k = 0;
@@ -533,26 +549,30 @@ class PrinterUtils {
 
         String zeroStr = "";
         if (zeroCount > 0) {
-            bitLen = bmpWidth / 8 + 1;
+            bitLen = bmpWidth / 8;
             for (int i = 0; i < (8 - zeroCount); i++) {
                 zeroStr = zeroStr + "0";
             }
         }
 
+//        float[] hsv = new float[3];
         for (int i = 0; i < bmpHeight; i++) {
             sb = new StringBuffer();
             for (int j = 0; j < bmpWidth; j++) {
                 int color = bmp.getPixel(j, i);
 
+                // new
+//                Color.colorToHSV(color, hsv);
+//                if (hsv[2] > 0.5f) sb.append("0");
+//                else sb.append("1");
+
+                // old
                 int r = (color >> 16) & 0xff;
                 int g = (color >> 8) & 0xff;
                 int b = color & 0xff;
+                if (r > 160 && g > 160 && b > 160) sb.append("0");
+                else sb.append("1");
 
-                // if color close to white，bit='0', else bit='1'
-                if (r > 160 && g > 160 && b > 160)
-                    sb.append("0");
-                else
-                    sb.append("1");
             }
             if (zeroCount > 0) {
                 sb.append(zeroStr);
@@ -562,7 +582,7 @@ class PrinterUtils {
 
         List<String> bmpHexList = binaryListToHexStringList(list);
         String commandHexString = "1D763000";
-        String widthHexString = Integer.toHexString(bmpWidth % 8 == 0 ? bmpWidth / 8 : (bmpWidth / 8 + 1));
+        String widthHexString = Integer.toHexString(bmpWidth % 8 == 0 ? bmpWidth / 8 : (bmpWidth / 8));
         if (widthHexString.length() > 2) {
             Log.e("decodeBitmap error", " width is too large");
             return null;
@@ -572,12 +592,12 @@ class PrinterUtils {
         widthHexString = widthHexString + "00";
 
         String heightHexString = Integer.toHexString(bmpHeight);
-        if (heightHexString.length() > 2) {
-            Log.e("decodeBitmap error", " height is too large");
-            return null;
-        } else if (heightHexString.length() == 1) {
-            heightHexString = "0" + heightHexString;
-        }
+//        if (heightHexString.length() > 2) {
+//            Log.e("decodeBitmap error", " height is too large");
+//            return null;
+//        } else if (heightHexString.length() == 1) {
+//            heightHexString = "0" + heightHexString;
+//        }
         heightHexString = heightHexString + "00";
 
         List<String> commandList = new ArrayList<String>();
