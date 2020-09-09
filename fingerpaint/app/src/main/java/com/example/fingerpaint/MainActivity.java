@@ -1,133 +1,78 @@
 package com.example.fingerpaint;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.fingerpaint.view.BackButton;
+import com.example.fingerpaint.view.DrawingView;
+import com.example.fingerpaint.view.SignatureBtn;
+import com.example.fingerpaint.view.SignatureLabel;
+import com.example.fingerpaint.view.SignatureView;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
+
     DrawingView dv;
-    private Paint mPaint;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_LOW_PROFILE;
+        decorView.setSystemUiVisibility(uiOptions);
+
+        FrameLayout layout = new FrameLayout(this);
+        FrameLayout.LayoutParams layoutparams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT, Gravity.CENTER_HORIZONTAL | Gravity.CENTER_VERTICAL);
+        layout.setLayoutParams(layoutparams);
+
+        setContentView(layout);
+
+        SignatureView sv = new SignatureView(this);
+        layout.addView(sv);
+
+        SignatureLabel sl = new SignatureLabel(this);
+        layout.addView(sl);
+
         dv = new DrawingView(this);
-        setContentView(dv);
-        mPaint = new Paint();
-        mPaint.setAntiAlias(true);
-        mPaint.setDither(true);
-        mPaint.setColor(0xff0096e0);
-        mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeJoin(Paint.Join.ROUND);
-        mPaint.setStrokeCap(Paint.Cap.ROUND);
-        mPaint.setStrokeWidth(4);
+        layout.addView(dv);
+
+        BackButton backBtn = new BackButton(this);
+        layout.addView(backBtn);
+
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(metrics);
+
+        SignatureBtn clearBtn = new SignatureBtn(this, "clear", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "clear!");
+            }
+        });
+        layout.addView(clearBtn);
+
+        SignatureBtn saveBtn = new SignatureBtn(this, "save", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "save!");
+            }
+        });
+        layout.addView(saveBtn);
+
+
+        //saveBtn.setY(metrics.heightPixels);
+
+
     }
 
-    public class DrawingView extends View {
 
-        public int width;
-        public int height;
-        private Bitmap mBitmap;
-        private Canvas mCanvas;
-        private Path mPath;
-        private Paint mBitmapPaint;
-        Context context;
-        private Paint circlePaint;
-        private Path circlePath;
-
-        public DrawingView(Context c) {
-            super(c);
-            context = c;
-            mPath = new Path();
-            mBitmapPaint = new Paint(Paint.DITHER_FLAG);
-            circlePaint = new Paint();
-            circlePath = new Path();
-            circlePaint.setAntiAlias(true);
-            circlePaint.setColor(0xff0096e0);
-            circlePaint.setStyle(Paint.Style.STROKE);
-            circlePaint.setStrokeJoin(Paint.Join.MITER);
-            circlePaint.setStrokeWidth(2f);
-        }
-
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            super.onSizeChanged(w, h, oldw, oldh);
-
-            mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            mCanvas = new Canvas(mBitmap);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-
-            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-            canvas.drawPath(mPath, mPaint);
-            canvas.drawPath(circlePath, circlePaint);
-        }
-
-        private float mX, mY;
-        private static final float TOUCH_TOLERANCE = 4;
-
-        private void touch_start(float x, float y) {
-            mPath.reset();
-            mPath.moveTo(x, y);
-            mX = x;
-            mY = y;
-        }
-
-        private void touch_move(float x, float y) {
-            float dx = Math.abs(x - mX);
-            float dy = Math.abs(y - mY);
-            if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
-                mPath.quadTo(mX, mY, (x + mX) / 2, (y + mY) / 2);
-                mX = x;
-                mY = y;
-
-                circlePath.reset();
-                circlePath.addCircle(mX, mY, 30, Path.Direction.CW);
-            }
-        }
-
-        private void touch_up() {
-            mPath.lineTo(mX, mY);
-            circlePath.reset();
-            // commit the path to our offscreen
-            mCanvas.drawPath(mPath, mPaint);
-            // kill this so we don't double draw
-            mPath.reset();
-        }
-
-        @Override
-        public boolean onTouchEvent(MotionEvent event) {
-            float x = event.getX();
-            float y = event.getY();
-
-            switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    touch_start(x, y);
-                    invalidate();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    touch_move(x, y);
-                    invalidate();
-                    break;
-                case MotionEvent.ACTION_UP:
-                    touch_up();
-                    invalidate();
-                    break;
-            }
-            return true;
-        }
-    }
 }
