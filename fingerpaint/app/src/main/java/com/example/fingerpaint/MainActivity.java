@@ -208,6 +208,11 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
+    @Override
+    protected void onDestroy() {
+        Log.d(TAG, "onDestroy");
+        if (dv != null && dv.bitmap != null) dv.bitmap.recycle();
+        super.onDestroy();
+    }
 }
 
