@@ -44,7 +44,7 @@ public class SignatureLabel extends AppCompatTextView {
         super.setPivotY(0);
         super.setRotation(90);
         super.setX((int) (width * 0.2) - 2 );
-        super.setPadding((int) (height *0.05f), 0, 0, 0);
+        super.setPadding((int) (height *0.075f), 0, 0, 0);
     }
 
 }
