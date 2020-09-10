@@ -204,6 +204,8 @@ public class MainActivity extends AppCompatActivity {
 //
 //        Log.d(TAG, "saveImage success: " + file.getAbsolutePath());
 
+        finish();
+
     }
 
 
