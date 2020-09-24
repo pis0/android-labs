@@ -1,5 +1,0 @@
-curso.utils
-drawable ic_launcher
-layout main
-string app_name
-string hello

@@ -1,4 +1,0 @@
-int drawable ic_launcher 0x0
-int layout main 0x0
-int string app_name 0x0
-int string hello 0x0
