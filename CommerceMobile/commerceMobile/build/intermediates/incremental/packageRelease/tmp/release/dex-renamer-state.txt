@@ -1,4 +1,4 @@
-#Thu Sep 24 16:12:11 BRT 2020
+#Thu Sep 24 16:36:41 BRT 2020
 base.0=C\:\\workspace\\_labs\\android-labs\\CommerceMobile\\commerceMobile\\build\\intermediates\\dex\\release\\mergeDexRelease\\classes.dex
 path.0=classes.dex
 renamed.0=classes.dex
