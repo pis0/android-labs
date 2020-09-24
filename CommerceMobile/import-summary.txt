@@ -1,0 +1,144 @@
+ECLIPSE ANDROID PROJECT IMPORT SUMMARY
+======================================
+
+Manifest Merging:
+-----------------
+Your project uses libraries that provide manifests, and your Eclipse
+project did not explicitly turn on manifest merging. In Android Gradle
+projects, manifests are always merged (meaning that contents from your
+libraries' manifests will be merged into the app manifest. If you had
+manually copied contents from library manifests into your app manifest
+you may need to remove these for the app to build correctly.
+
+Ignored Files:
+--------------
+The following files were *not* copied into the new Gradle project; you
+should evaluate whether these are still needed in your project and if
+so manually move them:
+
+From CommerceMobile:
+* .idea\
+* .idea\.name
+* .idea\CommerceMobile.iml
+* .idea\compiler.xml
+* .idea\copyright\
+* .idea\copyright\profiles_settings.xml
+* .idea\copyright\vssver2.scc
+* .idea\encodings.xml
+* .idea\misc.xml
+* .idea\modules.xml
+* .idea\scopes\
+* .idea\scopes\scope_settings.xml
+* .idea\scopes\vssver2.scc
+* .idea\vcs.xml
+* .idea\vssver2.scc
+* .idea\workspace.xml
+* CommerceMobile.iml
+* ic_launcher-web.png
+* proguard-project.txt
+* vssver2.scc
+From Utils:
+* Utils.iml
+* proguard-project.txt
+* vssver2.scc
+
+Replaced Jars with Dependencies:
+--------------------------------
+The importer recognized the following .jar files as third party
+libraries and replaced them with Gradle dependencies instead. This has
+the advantage that more explicit version information is known, and the
+libraries can be updated automatically. However, it is possible that
+the .jar file in your project was of an older version than the
+dependency we picked, which could render the project not compileable.
+You can disable the jar replacement in the import wizard and try again:
+
+android-support-v4.jar => com.android.support:support-v4:19.+
+android-support-v7-appcompat.jar => com.android.support:appcompat-v7:19.+
+gson-2.2.2.jar => com.google.code.gson:gson:2.2.2
+
+Potentially Missing Dependency:
+-------------------------------
+When we replaced the following .jar files with a Gradle dependency, we
+inferred the dependency version number from the filename. This
+specific version may not actually be available from the repository.
+If you get a build error stating that the dependency is missing, edit
+the version number to for example "+" to pick up the latest version
+instead. (This may require you to update your code if the library APIs
+have changed.)
+
+gson-2.2.2.jar => version 2.2.2 in com.google.code.gson:gson:2.2.2
+
+Replaced Libraries with Dependencies:
+-------------------------------------
+The importer recognized the following library projects as third party
+libraries and replaced them with Gradle dependencies instead. This has
+the advantage that more explicit version information is known, and the
+libraries can be updated automatically. However, it is possible that
+the source files in your project were of an older version than the
+dependency we picked, which could render the project not compileable.
+You can disable the library replacement in the import wizard and try
+again:
+
+android-support-v7-appcompat => [com.android.support:appcompat-v7:19.+]
+
+Moved Files:
+------------
+Android Gradle projects use a different directory structure than ADT
+Eclipse projects. Here's how the projects were restructured:
+
+In Utils:
+* AndroidManifest.xml => utils\src\main\AndroidManifest.xml
+* assets\ => utils\src\main\assets
+* res\ => utils\src\main\res\
+* src\ => utils\src\main\java\
+* src\commons\vssver2.scc => utils\src\main\resources\commons\vssver2.scc
+* src\comparator\vssver2.scc => utils\src\main\resources\comparator\vssver2.scc
+* src\curso\utils\vssver2.scc => utils\src\main\resources\curso\utils\vssver2.scc
+* src\filefilter\vssver2.scc => utils\src\main\resources\filefilter\vssver2.scc
+* src\input\vssver2.scc => utils\src\main\resources\input\vssver2.scc
+* src\monitor\vssver2.scc => utils\src\main\resources\monitor\vssver2.scc
+* src\output\vssver2.scc => utils\src\main\resources\output\vssver2.scc
+In CommerceMobile:
+* AndroidManifest.xml => commerceMobile\src\main\AndroidManifest.xml
+* assets\ => commerceMobile\src\main\assets
+* libs\aliendroid-activerecord-1.0.0-SNAPSHOT.jar => commerceMobile\libs\aliendroid-activerecord-1.0.0-SNAPSHOT.jar
+* libs\aliendroid-core-1.0.0-SNAPSHOT.jar => commerceMobile\libs\aliendroid-core-1.0.0-SNAPSHOT.jar
+* libs\android-active-record.jar => commerceMobile\libs\android-active-record.jar
+* libs\android-support-v13.jar => commerceMobile\libs\android-support-v13.jar
+* libs\GoogleAdMobAdsSdk-6.0.0.jar => commerceMobile\libs\GoogleAdMobAdsSdk-6.0.0.jar
+* libs\GraphView-3.1.2.jar => commerceMobile\libs\GraphView-3.1.2.jar
+* libs\guice-3.0-no_aop.jar => commerceMobile\libs\guice-3.0-no_aop.jar
+* libs\httpclient-4.2.5.jar => commerceMobile\libs\httpclient-4.2.5.jar
+* libs\Java-WebSocket-1.3.9.jar => commerceMobile\libs\Java-WebSocket-1.3.9.jar
+* libs\javax.inject-1.jar => commerceMobile\libs\javax.inject-1.jar
+* libs\jsr305-1.3.9.jar => commerceMobile\libs\jsr305-1.3.9.jar
+* libs\recyclerview-v7-21.0.0.jar => commerceMobile\libs\recyclerview-v7-21.0.0.jar
+* libs\roboguice-2.0.jar => commerceMobile\libs\roboguice-2.0.jar
+* libs\signalr-client-sdk-android.jar => commerceMobile\libs\signalr-client-sdk-android.jar
+* libs\signalr-client-sdk.jar => commerceMobile\libs\signalr-client-sdk.jar
+* libs\zxing-2.1.jar => commerceMobile\libs\zxing-2.1.jar
+* lint.xml => commerceMobile\lint.xml
+* res\ => commerceMobile\src\main\res\
+* src\ => commerceMobile\src\main\java\
+* src\br\inf\commerce\multimobilegpa\vssver2.scc => commerceMobile\src\main\resources\br\inf\commerce\multimobilegpa\vssver2.scc
+* src\MultiMobile\DAO\vssver2.scc => commerceMobile\src\main\resources\MultiMobile\DAO\vssver2.scc
+* src\MultiMobile\Services\vssver2.scc => commerceMobile\src\main\resources\MultiMobile\Services\vssver2.scc
+* src\MultiMobile\Threads\vssver2.scc => commerceMobile\src\main\resources\MultiMobile\Threads\vssver2.scc
+* src\MultiMobile\Utils\vssver2.scc => commerceMobile\src\main\resources\MultiMobile\Utils\vssver2.scc
+* ic_button_sair_fila.JPG => ic_button_sair_fila.jpg
+* logocommerceformatado_varejo.PNG => logocommerceformatado_varejo.png
+
+Next Steps:
+-----------
+You can now build the project. The Gradle project needs network
+connectivity to download dependencies.
+
+Bugs:
+-----
+If for some reason your project does not build, and you determine that
+it is due to a bug or limitation of the Eclipse to Gradle importer,
+please file a bug at http://b.android.com with category
+Component-Tools.
+
+(This import summary is for your information only, and can be deleted
+after import once you are satisfied with the results.)

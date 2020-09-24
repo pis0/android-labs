@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: ./commerceMobile/libs/aliendroid-core-1.0.0-SNAPSHOT.jar">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/commerceMobile/libs/aliendroid-core-1.0.0-SNAPSHOT.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: ./commerceMobile/libs/guice-3.0-no_aop.jar">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/commerceMobile/libs/guice-3.0-no_aop.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "applicationId": "br.inf.commerce.multimobilegpa.android",
+  "variantType": "BASE_APK",
+  "elements": [
+    {
+      "outputType": {
+        "type": "PROCESSED_RES"
+      },
+      "apkData": {
+        "type": "MAIN",
+        "splits": [],
+        "versionCode": 1001001,
+        "versionName": "1.01.01",
+        "outputFile": "commerceMobile-debug.apk",
+        "fullName": "debug",
+        "baseName": "debug",
+        "dirName": ""
+      },
+      "path": "resources-debug.ap_",
+      "properties": {
+        "packageId": "br.inf.commerce.multimobilegpa.android",
+        "split": "",
+        "minSdkVersion": "19"
+      }
+    }
+  ]
+}

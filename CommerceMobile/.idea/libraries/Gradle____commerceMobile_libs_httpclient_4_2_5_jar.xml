@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: ./commerceMobile/libs/httpclient-4.2.5.jar">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/commerceMobile/libs/httpclient-4.2.5.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

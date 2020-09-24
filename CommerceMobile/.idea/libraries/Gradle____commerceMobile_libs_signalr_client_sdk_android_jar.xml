@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Gradle: ./commerceMobile/libs/signalr-client-sdk-android.jar">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/commerceMobile/libs/signalr-client-sdk-android.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

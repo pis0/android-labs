@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="br.inf.commerce.multimobilegpa.android"
+    android:targetSandboxVersion="2"
+    android:versionCode="1001001"
+    android:versionName="1.01.01" >
+
+    <uses-sdk
+        android:minSdkVersion="19"
+        android:targetSdkVersion="29" />
+    <!-- Minimo Android 4.2 Jelly Bean -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <application
+        android:name="br.inf.commerce.multimobilegpa.android.CommerceMobileApp"
+        android:allowBackup="true"
+        android:appComponentFactory="android.support.v4.app.CoreComponentFactory"
+        android:hardwareAccelerated="false"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.SplashActivity"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.LoginActivity"
+            android:label="@string/title_activity_login"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize|stateVisible" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.PrincipalActivity"
+            android:label="@string/title_activity_principal"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.VisualizarCargaFilaActivity"
+            android:label="@string/title_activity_carga_fila"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.VisualizarNotificacaoOnlineActivity"
+            android:label="@string/title_activity_notificacao_online_fila"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.VisualizarDadosCargaOnlineActivity"
+            android:label="@string/title_activity_dados_carga_online_fila"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.VisualizarOcorrenciaGlogOnlineActivity"
+            android:label="@string/title_activity_lista_ocorrencia_glog_online_fila"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name="br.inf.commerce.multimobilegpa.android.OcorrenciaGlogActivity"
+            android:label="@string/title_activity_ocorrencia_glog_fila"
+            android:screenOrientation="portrait" />
+
+        <service
+            android:name="br.inf.commerce.multimobilegpa.android.SignalRService"
+            android:exported="false" >
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <action android:name="SERVICO_CONEXAO_MOBILEGPA" />
+            </intent-filter>
+        </service>
+        <service android:name="br.inf.commerce.multimobilegpa.android.SignalRNotificationService" />
+
+        <receiver android:name="br.inf.commerce.multimobilegpa.android.SignalRReceiver" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

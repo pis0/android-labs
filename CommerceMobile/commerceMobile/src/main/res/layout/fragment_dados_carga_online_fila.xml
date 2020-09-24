@@ -1,0 +1,118 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="br.inf.commerce.multimobilegpa.PrincipalActivity"
+    tools:ignore="MergeRootFrame" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal" >
+
+            <TextView
+                android:id="@+id/id_lbl_title_dados_carga_online_fila"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:drawableRight="@drawable/ic_multivarejo"
+                android:text="Dados da Carga"
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="@color/laranja" />
+
+            <TextView
+                android:id="@+id/id_lbl_cd_dados_carga_online_fila"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CD:"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/id_lbl_numero_dados_carga_online_fila"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Carga:"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/id_lbl_tipo_dados_carga_online_fila"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tipo da Carga:"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/id_lbl_peso_dados_carga_online_fila"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Peso:"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/id_lbl_saida_dados_carga_online_fila"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Saída:"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp" />
+
+            <View
+                android:layout_width="fill_parent"
+                android:layout_height="1dp"
+                android:background="@color/laranja" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/id_lbl_pedidos_dados_carga_online_fila"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="PEDIDOS"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ListView
+                android:id="@+id/id_list_view_dados_carga_online_fila"
+                android:layout_width="match_parent"
+                android:layout_height="0dip"
+                android:layout_weight="1" >
+            </ListView>
+
+            <TextView
+                android:id="@+id/id_lbl_total_dados_carga_online_fila"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Total: 0"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>
