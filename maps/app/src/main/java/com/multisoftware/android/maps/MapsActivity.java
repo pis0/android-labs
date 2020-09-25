@@ -1,7 +1,9 @@
 package com.multisoftware.android.maps;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -16,6 +18,9 @@ import android.os.Bundle;
 import android.util.TypedValue;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -36,9 +41,13 @@ import java.util.List;
 
 public class MapsActivity extends FragmentActivity
         implements OnMapReadyCallback,
-        GoogleMap.OnInfoWindowClickListener {
+        GoogleMap.OnInfoWindowClickListener,
+        ActivityCompat.OnRequestPermissionsResultCallback {
 
+    static private String TAG = MapsActivity.class.getSimpleName();
     private GoogleMap mMap;
+
+    private boolean permissionDenied = false;
 
     public LatLng getLocationFromAddress(Context context, String strAddress) {
         Geocoder coder = new Geocoder(context);
@@ -71,24 +80,14 @@ public class MapsActivity extends FragmentActivity
     }
 
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
-
     private LatLng address;
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
+        enableMyLocation();
 
         String polyline = "|w`gCdjm{Gc@pAO^QVc@h@]Xq@zAa@dAc@xAk@nDa@tBh@N`Bf@p@Zl@\\pEzEQ|@Y~AId@r@t@dD`D~DhEtBzCbAfAt@`@fA^xLbD`Bp@|AbA|AnA~ApBfB|B`EnEfBjCtBfD^t@TbAFjAKjC{@bOUdEIvAKnESte@OpBi@tAo@v@w@f@_DvAs@d@c@d@Un@m@zCS|A@`B`@|B|@~CpFvMVl@Fr@GdAa@rAyC`HkA|C[dC@pCVlBfJ`_@ZzAZjBnA~Lh@rBp@vAbC`EbD`FhDrFhAdCl@hBn@pCvAnGtBpJxF`QNd@lC|ITt@dDhK|@xEtAhHrBvMd@tAn@|@r@j@z@d@|@TrAXv@Tz@d@p@x@^nAj@pCpAfGfEnS`@z@p@h@j@Pn@FrDFtAJ|@Xx@d@hBbBvG|Gp@x@`@~@PbADjAAlDLvCJlBhBzP@DVlCTpB@Fl@xFDd@VtBh@lB`ArAfAx@fA\\dGbAlCb@zAXJBXDd@HhPhCr@JvATvDp@jJ~A`AV|@^nAp@x@l@n@p@l@v@`AvAz@dBfA~Bd@zAb@hB~@`ErMlj@`@jBXfBPlBR`GNrHFxALxATvA\\tAd@rAj@fAt@hA|@`ArAhAbT|ObBpALHlB|An@p@j@t@d@v@d@dAZ|@lItYn@nBr@jB`BbDfMtUp@~@t@t@z@n@bAj@~@\\|@ThAPjAL`BDfDCtUc@rLOv]g@vR]hBAzADpALhALzB`@`LxBnHrAlHxApEz@rJjB`IdB~Ab@xAd@|Bz@xB~@jIdDhXnKNFhAd@v@\\^Nv@XlMbFtAh@pAn@fAr@p@l@n@t@p@|@^v@^z@\\fA`@~Al@xCtM|q@dBxITpA@DRjA@@Lp@BLHb@fBjJ\\bB~@`Fl@xCjDrQzBtL~DrS`DpPbCjMx@jEh@~Bn@pBh@xAh@rAr@tAp@lAv@hAr@dAx@|@vDxDjDfDxJtJtQjQhGfGrBjBfAt@~@f@`Ab@rBp@pCj@hAJrCXxD^hBNlBF|CRlE^pBThB\\xAb@tAj@dBz@rAbA|AxAbAtAt@lAj@hAf@tA^lAt@bD^vA`@hAj@hAn@~@x@|@r@n@`Al@bAf@l@TlAXhARrAJjABfAEvAMjEq@zB[`Ca@\\El@CbACdA@dAD`AH|@Jj@JhAVbCx@dC~@~`@rOtR~H`C~@FB`DlA`TnIfI|CjAf@hBt@rBt@VJdO|FhCxAb@^n@l@h@v@b@|@t@tBZbAN`ABj@@l@Ar@Kv@q@pBS\\kKnOcCfFuAdEiDpNqBbIm@zBi@vAi@t@o@|@y@r@u@d@_Ah@{@ViAXwARaCXw@Pe@Nm@Zk@b@e@f@e@t@s@tAgDlHsA|C[~@[dAWtAKrAGzA@jBFvAJ|@P`ARfA\\pA\\`AbA`ChArBtJhQfG|Kb@x@Xp@\\pANt@Hp@Dl@@hAC|@IbAO`AU~@c@tAkBnEa@jA[nAWnASxAO~AClA@xAFjAJhAVxAjAxFhCzLpAlGPv@~CrOv@`IXhI?dD_Atv@QlGe@tE_ArEaC`H}Pfd@oBhFo@pCYxCC|CHjB`@tC`@bB`BvDp`@`k@lG|I|@hBp@nBf@hCXnCPdJL~BL`GBlAVxPG`I}AzZsBh\\Cj@_@`H}AdVoB`_@BlCDrA^tCf@lBvAjC~@fAlDfCnMjIvO`K~@l@`W`P`GxD~BnBtDjEb@h@dAjBt@|AbAtBp@vB|@nDh@lDXtCNtE?`DiCvn@I|AsBvc@QdCOpDOxEBtCLlAv@jGx@fCl@pAx@jAbAtAnNfNhCjCxB`DlAfD~@dFT~CC~I@x@LrV@nD?tA@zA?l@KnAQd@e@b@k@Fi@Ge@_@Uk@Aq@Nq@^i@XUr@Kj@KfBCdAClDI^Az@C|AAjEGnRW`R_@tEEzI?|GXhEj@xF`A~a@jIlO~CzHbBzOlFhGrBd@NjJ~Cfd@lO~D|@pF~@~ATxALrk@|CtEl@dHxAvOfDxjBz`@nARP@nCVzBHjAB|AAnEErJEfGA|FLlGb@`w@hHtUxBnEf@hDt@bEnAlAh@lSdKlBv@tCv@pDr@|D^p{@vAnBHpBLzALvBXhB\\hB^`Cl@rInClF|ANDrA^~A\\pAPbCNxBDdAAfBEhTuAlK[vAA~Z_@xSYlk@y@vDG~MC~CDzJT`AA~AEzBE~E_@xEo@lHcB|DsApOcGjDkAtB]rBO~CEvBH`BPzBb@bS~FxEjAfEb@|F@xRgAzSwAf^_Ez@Kz@KhHs@`Jm@|FU`CKvBItGWza@cBvFM~C?|F^|Ex@bBd@fA\\dDjA~KnFjXtMv@^fFlCnBfAzDxBhSdLtD|A|DjAlDl@~CXnKX`B?xO`@xABjOZdIP|CDbDFbhAxBnBDnABvl@nAzR`@zFTfDVhEj@hGrA|LnCnYpGj@NdCj@dPrDfHzAbFfAlG~@zD^vHd@luBjI~BHL@lJ`@fFD~H`@xFJlH`@pCR^DfCPbDn@dBf@~@R~C|A|h@z[\\R\\T~ExC|DzBbAl@tAx@r@XlFfBlEzAfGdA`Fb@jFXhGTvIX~HZld@`BpEPvFf@jQlDzLhCVDvKzBnFlArDp@hEv@|OdC|Fp@tBRvCErC_@fC}@fBgArKyHjDgCj@c@bAk@zAu@tAg@lBm@xBe@bBWzGWdCHjCVxDbA`Bh@rAh@bGfC`Br@fQnHpA\\hAb@lBj@~C`AfAn@r@|@PVPZNd@Jf@Jz@DfAFfAFj@NbATx@^fABJh@jBLpADhACxFDjBE|BMpCmApKU~AmDnS_@zCW|CQbDGhB?rBB`FNhE`@tDX~BZdBP|BJdBTzC`@pFNxCpB~Yd@vGZlErAzQZhEpB~Z`@bFNjB|Bv]dCl^b@`Fh@~EhBlO`DxVbBbNjAhJ\\rClDnYlD~XjB|OvD~YxGfi@j@tEb@bD`Jxt@~C~Vn@`FZ|Bb@rDJdCDdA?r@?n@IrAMlASfBIx@CrADdANt@Pd@LZZd@ZZ^R^NZFv@?x@Kf@Of@Y`@_@Zi@Nc@Js@BaAAqBBeBNqA\\wArAkEdBgDl@oAvBuEtDiHjIaQlAyB~@}AhA}AxA{ArBgB|AcAzCuAdBq@zBq@jAYjASpGi@tq@iEvFWtDArGJrGb@~ATx@JdC\\bIjB~R`HvAf@j@R~QrGfHjC`Ct@~IvBhGz@dDP~CJzd@FzKCdCGd@CrAG~Gs@xU}ElTqEdD{@`FgBdEaB|@_@t@]dDsBfCaBfGaErB_AbC{@dFeBpMeClu@cN|Fm@|Fg@lI_@zQElj@[fT?`DIjAGjAOlAMdDq@fBg@jAa@fFeCvG{EdNsKdVwQzGkErNqHr[uOtB_A~Bw@|Be@~Ca@fDSbFG|n@oA`Fe@jB_@pBg@dBs@nBkAzAkAxAcB|KwQxDqGxA{BnA_B~CeDzB_C|BoBpLqJh@a@nEiDtEsDtDwCxGsFtCuCjD}D`E}FhBmCxC{ErAsBzFiJzCeFrHcLlFsHtEwFlAkAfIqHdQyOjGeFtH_EVKnRcIz[}LrYkKzFsCfAk@fDsCdCoCfCwD`BaDrDuI^}@xG_OnEwGzQyVfQ}TpOeQzGoHbQkPfFkE~AkBxBqDhEcG`AiAfIwJxf@ai@x@_A|BeChEmEvEyC|SqJj^yPtNwHp[sUjCoBf@[p@c@bAo@pEyBjHqBjQiEtGeBdJyD~QuNn@g@lLcJ|RkO\\YvMiK`KcIdFyEpEkH~IqSbDoGjD{F~M}P~Z_^x@_AbCuClZm^dHuEhCqAjCcA|I{BbTcFdBe@z@YzCuAlC{AdCiBbC_CtBgClCgF~Uqh@lCeFj@gA`DyGnC}EfEkGrE_GlNaM|KoJdB{ApNgMdCgCl@q@l`@ed@hGgHpJsKpA{AhAoAvCaCxAkAtBgB~@q@n@[j@SVGZEl@Dt@Ff@Hb@LZRj@d@Zj@Pf@Jf@Hp@LpAHtANpCTzCN~AJdAVzAZ|A\\hARv@\\jAb@zAVr@^|@rA|CnFlKjJ|QTb@rE~I`J`RrC`Hr@vB`@lAb@dAb@lAl@vB`@hB`@zAdAjEfBfHh@vBj@rB\\pA`AxDXbAXhAXrApCpKx@bDTz@`If[nH|Yp@vClDdNzA`Fx@~Bt@dBbAjB|ApCj@t@hA~AtA`BpBbCtA`BjQ`TfBpBfEzE|@fAtBfCjBpC|A|CvAdEdBbHzC`NbAvD\\lA|AvFhBhErBjDvDtEbS~OtEtDd]rXrFvEJTAPGHWH}ISwIQi@@]BiAPeAJ_ADmBEQA_DK}A?wAF_DXuBRoAVkAVaCt@{EpBKFsJpDMD";
 
@@ -135,7 +134,7 @@ public class MapsActivity extends FragmentActivity
         //BitmapDescriptor icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE);
 
         //address = getLocationFromAddress(this, "Rua José de Alencar, 94, chapecó sc");
-        LatLng address = new LatLng(-27.0890975,-52.6243636);
+        address = new LatLng(-27.0890975, -52.6243636);
         Marker marker = mMap.addMarker(
                 new MarkerOptions()
                         .position(address)
@@ -150,6 +149,38 @@ public class MapsActivity extends FragmentActivity
 //        bmp.recycle();
 
 
+    }
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+
+    private void enableMyLocation() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            if (mMap != null) {
+                mMap.setMyLocationEnabled(true);
+            }
+        } else {
+            // Permission to access the location is missing. Show rationale and request permission
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_PERMISSION_REQUEST_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) {
+            return;
+        }
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            // Enable the my location layer if the permission has been granted.
+            enableMyLocation();
+        } else {
+            // Permission was denied. Display an error message
+            // Display the missing permission error dialog when the fragments resume.
+            permissionDenied = true;
+        }
     }
 
 
@@ -191,6 +222,20 @@ public class MapsActivity extends FragmentActivity
         canvas.drawText(String.valueOf(order), canvas.getWidth() >> 1, (canvas.getHeight() >> 1), color);
 
         return bmp;
+    }
+
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+        if (permissionDenied) {
+            // Permission was not granted, display error dialog.
+            showMissingPermissionError();
+            permissionDenied = false;
+        }
+    }
+
+    private void showMissingPermissionError() {
+        Toast.makeText(this, "permission denied", Toast.LENGTH_LONG).show();
     }
 
 }
