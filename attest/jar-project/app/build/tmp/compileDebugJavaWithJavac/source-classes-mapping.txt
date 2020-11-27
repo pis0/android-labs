@@ -1,0 +1,4 @@
+com/assukar/anelab/Main.java
+ com.assukar.anelab.Main
+com/assukar/air/android/attest/BuildConfig.java
+ com.assukar.air.android.attest.BuildConfig

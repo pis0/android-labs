@@ -94,8 +94,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getInstaller() {
-        return context.getPackageManager()
+        String result = context.getPackageManager()
                 .getInstallerPackageName(context.getPackageName());
+        return result != null ? result : "";
     }
 
 
