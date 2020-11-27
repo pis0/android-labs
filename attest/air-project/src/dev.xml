@@ -1,0 +1,57 @@
+<application xmlns="http://ns.adobe.com/air/application/32.0">
+
+    <id>com.assukar.air.android.utils.androidUtils</id>
+    <filename>Main</filename>
+    <name>androidUtilsTest</name>
+    <versionNumber>1.0.0</versionNumber>
+
+    <initialWindow>
+
+        <content>Main.swf</content>
+        <visible>true</visible>
+        <autoOrients>true</autoOrients>
+        <fullScreen>true</fullScreen>
+
+    </initialWindow>
+
+    <android>
+        <manifestAdditions>
+            <![CDATA[
+            <manifest android:installLocation="auto">
+
+                <uses-permission android:name="android.permission.INTERNET"/>
+
+                <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="28"/>
+
+                <application
+                    android:enabled="true"
+                    android:debuggable="true"
+
+                    android:fullBackupContent="@xml/backup_rules"
+                    android:manageSpaceActivity="com.assukar.air.android.utils.services.CustomSpaceActivity"
+                    android:allowBackup="true"
+                    android:backupAgent="com.assukar.air.android.utils.services.SharedPreferencesBackupAgent"
+                >
+
+                    <activity android:excludeFromRecents="false">
+                        <intent-filter>
+                            <action android:name="android.intent.action.MAIN"/>
+                            <category android:name="android.intent.category.LAUNCHER"/>
+                        </intent-filter>
+                    </activity>
+
+                    <activity android:name="com.assukar.air.android.utils.services.CustomSpaceActivity" />
+
+                </application>
+
+            </manifest>]]>
+
+        </manifestAdditions>
+
+    </android>
+
+    <extensions>
+        <extensionID>com.assukar.air.android.utils</extensionID>
+    </extensions>
+
+</application>

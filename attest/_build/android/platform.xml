@@ -1,0 +1,8 @@
+<platform xmlns="http://ns.adobe.com/air/extension/32.0">
+	<packagedResources>
+		<packagedResource>
+			<packageName>com.assukar.air.android.utils</packageName>
+			<folderName>com.assukar.air.android.utils_res</folderName>
+		</packagedResource>
+	</packagedResources>	
+</platform>
