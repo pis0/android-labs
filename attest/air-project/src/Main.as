@@ -49,6 +49,19 @@ public class Main extends Sprite {
     private function onAttest(e:AndroidAttestActions):void {
         trace("onAttest - data:" + e.data);
         textField.text = e.data;
+
+        /*
+         {
+             "debug":true,
+             "root":false,
+             "emulator":false,
+             "installer":"",
+             "apkSha":"1fd74711609f966df43b6c4a8db6b968e31def77",
+             "signatures":[
+                 "PaxfBuulNK6nq3jkz7aRaqs34tQ="
+             ]
+         }
+        */
     }
 
 
