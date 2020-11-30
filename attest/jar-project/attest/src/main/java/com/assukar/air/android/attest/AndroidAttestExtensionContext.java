@@ -16,7 +16,7 @@ public class AndroidAttestExtensionContext extends FREContext {
 
     @Override
     public void dispose() {
-        Log.d(TAG,"Context disposed.");
+        Log.d(TAG, "Context disposed.");
     }
 
     @Override
@@ -29,8 +29,6 @@ public class AndroidAttestExtensionContext extends FREContext {
 
         return functions;
     }
-
-
 
 
 }

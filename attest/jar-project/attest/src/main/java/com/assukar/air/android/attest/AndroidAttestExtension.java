@@ -6,6 +6,7 @@ import android.util.Log;
 import com.adobe.fre.FREContext;
 import com.adobe.fre.FREExtension;
 
+
 public class AndroidAttestExtension implements FREExtension {
 
     private static final String TAG = "AndroidAttest";

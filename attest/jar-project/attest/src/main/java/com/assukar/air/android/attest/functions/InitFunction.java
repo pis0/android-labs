@@ -8,6 +8,7 @@ import com.adobe.fre.FREObject;
 import com.assukar.air.android.attest.AndroidAttestExtension;
 import com.assukar.air.android.attest.actions.AndroidAttestActions;
 
+
 public class InitFunction implements FREFunction {
 
     private static final String TAG = "AndroidAttest";

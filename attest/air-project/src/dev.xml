@@ -1,8 +1,8 @@
 <application xmlns="http://ns.adobe.com/air/application/32.0">
 
-    <id>com.assukar.air.android.utils.androidUtils</id>
+    <id>com.assukar.air.android.attest.androidAttest</id>
     <filename>Main</filename>
-    <name>androidUtilsTest</name>
+    <name>androidAttestTest</name>
     <versionNumber>1.0.0</versionNumber>
 
     <initialWindow>
@@ -26,11 +26,6 @@
                 <application
                     android:enabled="true"
                     android:debuggable="true"
-
-                    android:fullBackupContent="@xml/backup_rules"
-                    android:manageSpaceActivity="com.assukar.air.android.utils.services.CustomSpaceActivity"
-                    android:allowBackup="true"
-                    android:backupAgent="com.assukar.air.android.utils.services.SharedPreferencesBackupAgent"
                 >
 
                     <activity android:excludeFromRecents="false">
@@ -39,8 +34,6 @@
                             <category android:name="android.intent.category.LAUNCHER"/>
                         </intent-filter>
                     </activity>
-
-                    <activity android:name="com.assukar.air.android.utils.services.CustomSpaceActivity" />
 
                 </application>
 
@@ -51,7 +44,7 @@
     </android>
 
     <extensions>
-        <extensionID>com.assukar.air.android.utils</extensionID>
+        <extensionID>com.assukar.air.android.attest</extensionID>
     </extensions>
 
 </application>

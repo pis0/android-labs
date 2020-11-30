@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="Flex" version="4">
+  <component name="FlexBuildConfigurationManager" active="app">
+    <configurations>
+      <configuration name="app" target-platform="Mobile" pure-as="true" main-class="Main" output-file="Main.swf" output-folder="$MODULE_DIR$/../out">
+        <dependencies>
+          <entries>
+            <entry library-id="39bd48a4-91c9-4eca-9c1c-e39ce7e9b4c0">
+              <dependency linkage="Merged" />
+            </entry>
+          </entries>
+          <sdk name="_airSDK" />
+        </dependencies>
+        <compiler-options />
+        <packaging-air-desktop />
+        <packaging-android enabled="true" use-generated-descriptor="false" custom-descriptor-path="$MODULE_DIR$/dev.xml" package-file-name="Unnamed" />
+        <packaging-ios package-file-name="Unnamed" />
+      </configuration>
+    </configurations>
+    <compiler-options />
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../libs" />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="_airSDK" jdkType="Flex SDK Type (new)" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library" exported="">
+      <library type="flex">
+        <properties id="39bd48a4-91c9-4eca-9c1c-e39ce7e9b4c0" />
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../libs/com.assukar.air.android.attest.ane!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+  </component>
+</module>

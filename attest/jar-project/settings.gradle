@@ -1,2 +1,2 @@
-include ':app', ':attest', ':statics'
+include ':app', ':attest'
 rootProject.name='androidAttest'

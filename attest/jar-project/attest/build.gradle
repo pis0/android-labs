@@ -16,7 +16,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -27,5 +27,5 @@ dependencies
 {
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation files('libs/FlashRuntimeExtensions.jar')
-    implementation files('libs/statics.jar')
+    implementation files('libs/classes.jar')
 }

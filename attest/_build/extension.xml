@@ -1,21 +1,28 @@
 <extension xmlns="http://ns.adobe.com/air/extension/32.0">
-    <id>com.assukar.air.android.utils</id>
+    <id>com.assukar.air.android.attest</id>
     <versionNumber>1.0.0</versionNumber>
     <platforms>
 
         <platform name="Android-ARM">
             <applicationDeployment>
                 <nativeLibrary>classes.jar</nativeLibrary>
-                <initializer>com.assukar.air.android.utils.AndroidUtilsExtension</initializer>
-                <finalizer>com.assukar.air.android.utils.AndroidUtilsExtension</finalizer>
+                <initializer>com.assukar.air.android.attest.AndroidAttestExtension</initializer>
+                <finalizer>com.assukar.air.android.attest.AndroidAttestExtension</finalizer>
             </applicationDeployment>
         </platform>
+        <!-- <platform name="Android-ARM64">
+            <applicationDeployment>
+                <nativeLibrary>classes.jar</nativeLibrary>
+                <initializer>com.assukar.air.android.attest.AndroidAttestExtension</initializer>
+                <finalizer>com.assukar.air.android.attest.AndroidAttestExtension</finalizer>
+            </applicationDeployment>
+        </platform> -->
 
         <platform name="Android-x86">
             <applicationDeployment>
                 <nativeLibrary>classes.jar</nativeLibrary>
-                <initializer>com.assukar.air.android.utils.AndroidUtilsExtension</initializer>
-                <finalizer>com.assukar.air.android.utils.AndroidUtilsExtension</finalizer>
+                <initializer>com.assukar.air.android.attest.AndroidAttestExtension</initializer>
+                <finalizer>com.assukar.air.android.attest.AndroidAttestExtension</finalizer>
             </applicationDeployment>
         </platform>
 

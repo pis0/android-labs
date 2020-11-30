@@ -1,13 +1,13 @@
 
-export ADOBE_SDK="C:/workspace/_airSDKs/32.0.0.116"
-export BASE_PATH="C:/workspace/Assukar/dev/client/libs/customnativeextensions/android/utils/_build"
+export ADOBE_SDK="C:/workspace/_airSDK"
+export BASE_PATH="C:/workspace/pipa/_labs/android-labs/attest/_build"
 
 export ADT=$ADOBE_SDK"/bin/adt.bat"
 export EXTENSION_PATH=$BASE_PATH"/extension.xml"
-export SWC_PATH=$BASE_PATH"/com.assukar.air.android.utils.swc"
+export SWC_PATH=$BASE_PATH"/lib.swc"
 export ANDROID_PATH=$BASE_PATH"/android"
 export DEFAULT_PATH=$BASE_PATH"/default"
-export ANE_OUTPUT_PATH=$BASE_PATH"/com.assukar.air.android.utils.ane"
+export ANE_OUTPUT_PATH=$BASE_PATH"/com.assukar.air.android.attest.ane"
 
 $ADT \
 -package -target ane $ANE_OUTPUT_PATH \
